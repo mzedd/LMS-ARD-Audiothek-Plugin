@@ -1,0 +1,15 @@
+PLUGIN_ARDAUDIOTHEK
+	EN	ARDAudiothek for Squeezebox
+	DE	ARD Audiothek für Squeezebox
+
+PLUGIN_ARDAUDIOTHEK_NAME
+	EN	ARD Audiothek
+	DE	ARD Audiothek
+
+PLUGIN_ARDAUDIOTHEK_SEARCH
+	EN	Search
+	DE	Suche
+
+PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES
+	EN	Categories
+	DE	Rubriken

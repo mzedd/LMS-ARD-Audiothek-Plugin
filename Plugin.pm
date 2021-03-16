@@ -5,6 +5,8 @@ use base qw(Slim::Plugin::OPMLBased);
 use Slim::Utils::Log;
 use Slim::Utils::Strings qw(string cstring);
 
+use Plugins::ARDAudiothek::API;
+
 my $log = Slim::Utils::Log->addLogCategory( {
 	category     => 'plugin.ardaudiothek',
 	defaultLevel => 'WARN',
@@ -33,8 +35,33 @@ sub homescreen {
 
     $callback->([
             { name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES') , type => 'link', url => \&dummy },
-            { name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_SEARCH'), type => 'search', url => \&dummy }
+            { name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_SEARCH'), type => 'search', url => \&searchItems }
     ]);
+}
+
+sub searchItems {
+    my ($client, $callback, $args) = @_;
+
+    Plugins::ARDAudiothek::API->search(
+        sub {
+            my $content = shift;
+            my $items = [];
+
+            for my $entry (@{$content->{_embedded}->{"mt:items"}}) {
+                push @{$items}, {
+                    name => $entry->{title},
+                    type => 'link'
+                };
+            }
+
+            $callback->({ items => $items });
+        },
+        {
+            search  => $args->{search},
+            offset  => $args->{index},
+            limit   => $args->{quantity}
+        }
+    );
 }
 
 sub dummy {

@@ -14,7 +14,13 @@ my $log = logger('plugin.ardaudiothek');
 sub search {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_URL . "search/items?query=$args->{search}&offset=$args->{offset}&limit=$args->{limit}";
+    my $offset = 0;
+
+    if (defined $args->{index}) {
+        $offset = $args->{index};
+    }
+
+    my $url = API_URL . "search/$args->{searchType}?query=$args->{searchWord}&offset=$offset&limit=$args->{limit}";
 
     $log->info("$url");
 

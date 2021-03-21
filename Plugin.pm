@@ -50,11 +50,12 @@ sub searchItems {
             for my $entry (@{$content->{_embedded}->{"mt:items"}}) {
                 push @{$items}, {
                     name => $entry->{title},
-                    type => 'link',
-                    url => \&dummy,
+                    type => 'audio',
+                    url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
                     favorites_type => 'link',
                     favorites_url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-                    play => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href}
+                    play => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
+                    on_select => 'play'
                 };
             }
             
@@ -62,9 +63,7 @@ sub searchItems {
         },
         {
             searchType  => 'items',
-            searchWord  => $args->{search},
-            offset      => $args->{index},
-            limit       => $args->{quantity}
+            searchWord  => $args->{search}
         }
     );
 }

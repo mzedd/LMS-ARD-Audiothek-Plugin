@@ -30,6 +30,10 @@ sub initPlugin {
     );
 }
 
+sub shutdownPlugin {
+    Plugins::ARDAudiothek::API->clearCache();
+}
+
 sub homescreen {
     my ($client, $callback, $args) = @_;
 

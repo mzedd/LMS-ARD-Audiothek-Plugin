@@ -51,7 +51,9 @@ sub searchItems {
     Plugins::ARDAudiothek::API->search(
         sub {
             my $content = shift;
+            
             my $items = [];
+            my $numberOfElements = $content->{numberOfElements}; 
 
             for my $entry (@{$content->{_embedded}->{"mt:items"}}) {
                 push @{$items}, {
@@ -65,11 +67,12 @@ sub searchItems {
                 };
             }
             
-            $callback->({ items => $items });
+            $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
         },
         {
             searchType  => 'items',
             searchWord  => $args->{search},
+            offset      => $args->{index},
             limit       => $serverPrefs->{prefs}->{itemsPerPage}
         }
     );

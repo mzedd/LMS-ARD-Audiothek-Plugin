@@ -18,7 +18,12 @@ my $cache = Slim::Utils::Cache->new();
 sub search {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_URL . "search/$args->{searchType}?query=$args->{searchWord}&offset=0&limit=$args->{limit}";
+    my $offset = 0;
+    if(defined $args->{offset}) {
+        $offset = $args->{offset};
+    }
+
+    my $url = API_URL . "search/$args->{searchType}?query=$args->{searchWord}&offset=$offset&limit=$args->{limit}";
 
     $log->info("$url");
 

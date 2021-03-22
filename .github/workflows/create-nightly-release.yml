@@ -9,6 +9,13 @@ jobs:
   create-nightly:
     runs-on: ubuntu-latest
     steps:
+      - name: Delete nightly release
+        uses: dev-drprasad/delete-tag-and-release@v0.2.0
+        with:
+          delete_release: true
+          tag_name: nightly
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create release
         id: create_release
         uses: actions/create-release@v1

@@ -25,7 +25,7 @@ jobs:
       - run: cp -r API.pm HTML/ install.xml Plugin.pm strings.txt ARDAudiothek/.
       - run: zip -r ARDAudiothek.zip ARDAudiothek
       - name: Upload ZIP file
-        id: upload-repo-file
+        id: upload-zip-file
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

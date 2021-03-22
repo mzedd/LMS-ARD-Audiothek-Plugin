@@ -4,6 +4,7 @@ use strict;
 use base qw(Slim::Plugin::OPMLBased);
 use Slim::Utils::Log;
 use Slim::Utils::Strings qw(string cstring);
+use Slim::Utils::Prefs;
 
 use Plugins::ARDAudiothek::API;
 
@@ -13,6 +14,7 @@ my $log = Slim::Utils::Log->addLogCategory( {
 	description  => 'PLUGIN_ARDAUDIOTHEK_NAME',
 	logGroups    => 'SCANNER',
 } );
+my $serverPrefs = preferences('server');
 
 sub getDisplayName {
     return 'PLUGIN_ARDAUDIOTHEK_NAME'
@@ -67,7 +69,8 @@ sub searchItems {
         },
         {
             searchType  => 'items',
-            searchWord  => $args->{search}
+            searchWord  => $args->{search},
+            limit       => $serverPrefs->{prefs}->{itemsPerPage}
         }
     );
 }

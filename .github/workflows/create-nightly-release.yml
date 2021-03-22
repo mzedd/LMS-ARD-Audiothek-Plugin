@@ -1,0 +1,37 @@
+name: Create nightly release
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  create-nightly:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: nightly
+          release_name: Nightly build
+          draft: false
+          prerelease: true
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - run: mkdir -p ARDAudiothek
+      - run: cp -r API.pm HTML/ install.xml Plugin.pm strings.txt ARDAudiothek/.
+      - run: zip -r ARDAudiothek.zip ARDAudiothek
+      - name: Generate checksum
+        run: sed -i "/checksum/{s/checksum/$(sha1sum ARDAudiothek.zip | awk '{print $1}')/}" repo.xml
+      - name: Upload repo file
+        id: upload-repo-file
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./repo.xml
+          asset_name: repo.xml

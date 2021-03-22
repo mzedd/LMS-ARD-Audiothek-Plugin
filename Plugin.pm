@@ -54,8 +54,13 @@ sub searchItems {
             
             my $items = [];
             my $numberOfElements = $content->{numberOfElements}; 
+            my $thumbnailSize = "$serverPrefs->{prefs}->{thumbSize}";
 
             for my $entry (@{$content->{_embedded}->{"mt:items"}}) {
+                my $imageURL = $entry->{_links}->{"mt:image"}->{href};
+                $imageURL =~ s/{ratio}/1x1/i;
+                $imageURL =~ s/{width}/$thumbnailSize/i;
+
                 push @{$items}, {
                     name => $entry->{title},
                     type => 'audio',
@@ -63,7 +68,8 @@ sub searchItems {
                     favorites_type => 'link',
                     favorites_url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
                     play => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-                    on_select => 'play'
+                    on_select => 'play',
+                    image => $imageURL
                 };
             }
             

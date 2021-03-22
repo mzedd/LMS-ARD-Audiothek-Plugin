@@ -39,6 +39,11 @@ sub shutdownPlugin {
 sub homescreen {
     my ($client, $callback, $args) = @_;
 
+    if(not defined $client) {
+        $callback->([{ name => string('PLUGIN_ARDAUDIOTHEK_NO_PLAYER')}]);
+        return;
+    }
+
     $callback->([
             { name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES') , type => 'link', url => \&dummy },
             { name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_SEARCH'), type => 'search', url => \&searchItems }

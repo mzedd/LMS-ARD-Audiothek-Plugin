@@ -6,6 +6,10 @@ PLUGIN_ARDAUDIOTHEK_NAME
 	EN	ARD Audiothek
 	DE	ARD Audiothek
 
+PLUGIN_ARDAUDIOTHEK_NO_PLAYER
+	EN	Please connect a player.
+	DE	Bitte einen Player anschalten.
+
 PLUGIN_ARDAUDIOTHEK_SEARCH
 	EN	Search
 	DE	Suche

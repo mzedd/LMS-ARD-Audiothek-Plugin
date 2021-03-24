@@ -140,25 +140,8 @@ sub listMostPlayedEpisodes {
 
     Plugins::ARDAudiothek::API->getEditorialCategoryPlaylists(
         sub {
-            my $content = shift;
-            
-            my $items = [];
-
-            for my $entry (@{$content->{_embedded}->{"mt:mostPlayed"}}) {
-                my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
-                
-                push @{$items}, {
-                    name => $entry->{title},
-                    type => 'audio',
-                    url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-                    favorites_type => 'link',
-                    favorites_url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-                    play => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-                    on_select => 'play',
-                    image => $imageURL
-                };
-            }
-            
+            my $content = shift; 
+            my $items = listEpisodes($content->{_embedded}->{"mt:mostPlayed"});
             $callback->({items => $items});
         },
         {
@@ -173,24 +156,7 @@ sub listNewestEpisodes {
     Plugins::ARDAudiothek::API->getEditorialCategoryPlaylists(
         sub {
             my $content = shift;
-            
-            my $items = [];
-
-            for my $entry (@{$content->{_embedded}->{"mt:items"}}) {
-                my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
-                
-                push @{$items}, {
-                    name => $entry->{title},
-                    type => 'audio',
-                    url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-                    favorites_type => 'link',
-                    favorites_url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-                    play => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-                    on_select => 'play',
-                    image => $imageURL
-                };
-            }
-            
+            my $items = listEpisodes($content->{_embedded}->{"mt:items"});
             $callback->({items => $items});
         },
         {
@@ -199,10 +165,26 @@ sub listNewestEpisodes {
     );
 }
 
-sub dummy {
-	my ($client, $callback, $args) = @_;
+sub listEpisodes {
+    my $jsonEpisodeList = shift;
+    my $items = [];
 
-	$log->info("Dummy clicked!");
+    for my $entry (@{$jsonEpisodeList}) {
+        my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
+        
+        push @{$items}, {
+            name => $entry->{title},
+            type => 'audio',
+            url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
+            favorites_type => 'link',
+            favorites_url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
+            play => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
+            on_select => 'play',
+            image => $imageURL
+        };
+    }
+
+    return $items;
 }
 
 sub selectImageFormat {

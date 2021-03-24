@@ -45,7 +45,7 @@ sub homescreen {
     }
 
     $callback->([
-            { name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES') , type => 'link', url => \&dummy },
+            { name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES') , type => 'link', url => \&listEditorialCategories },
             { name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_SEARCH'), type => 'search', url => \&searchItems }
     ]);
 }
@@ -59,13 +59,10 @@ sub searchItems {
             
             my $items = [];
             my $numberOfElements = $content->{numberOfElements}; 
-            my $thumbnailSize = "$serverPrefs->{prefs}->{thumbSize}";
 
             for my $entry (@{$content->{_embedded}->{"mt:items"}}) {
-                my $imageURL = $entry->{_links}->{"mt:image"}->{href};
-                $imageURL =~ s/{ratio}/1x1/i;
-                $imageURL =~ s/{width}/$thumbnailSize/i;
-
+                my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
+                
                 push @{$items}, {
                     name => $entry->{title},
                     type => 'audio',
@@ -89,10 +86,45 @@ sub searchItems {
     );
 }
 
+sub listEditorialCategories {
+    my ($client, $callback, $args) = @_;
+
+    Plugins::ARDAudiothek::API->getEditorialCategories(
+        sub {
+            my $content = shift;
+
+            my $items = [];
+            
+            for my $entry (@{$content->{_embedded}->{"mt:editorialCategories"}}) {
+                my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
+
+                push @{$items}, {
+                    name => $entry->{title},
+                    type => 'link',
+                    url => \&dummy,
+                    image => $imageURL
+                }
+            }
+
+            $callback->({items => $items});
+        }
+    );
+}
+
 sub dummy {
 	my ($client, $callback, $args) = @_;
 
 	$log->info("Dummy clicked!");
+}
+
+sub selectImageFormat {
+    my $imageURL = shift;
+    my $thumbnailSize = "$serverPrefs->{prefs}->{thumbSize}";
+
+    $imageURL =~ s/{ratio}/1x1/i;
+    $imageURL =~ s/{width}/$thumbnailSize/i;
+
+    return $imageURL;
 }
 
 1;

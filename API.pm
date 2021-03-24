@@ -15,6 +15,14 @@ use constant CACHE_TTL_IN_S => 24 * 3600;
 my $log = logger('plugin.ardaudiothek');
 my $cache = Slim::Utils::Cache->new();
 
+sub getEditorialCategories {
+    my ($class, $callback, $args) = @_;
+
+    my $url = API_URL . 'editorialcategories';
+
+    _call($url, $callback);
+}
+
 sub search {
     my ($class, $callback, $args) = @_;
 

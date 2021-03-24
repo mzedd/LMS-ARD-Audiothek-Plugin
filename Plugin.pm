@@ -57,24 +57,9 @@ sub searchItems {
         sub {
             my $content = shift;
             
-            my $items = [];
+            my $items = listEpisodes($content->{_embedded}->{"mt:items"});
             my $numberOfElements = $content->{numberOfElements}; 
-
-            for my $entry (@{$content->{_embedded}->{"mt:items"}}) {
-                my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
-                
-                push @{$items}, {
-                    name => $entry->{title},
-                    type => 'audio',
-                    url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-                    favorites_type => 'link',
-                    favorites_url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-                    play => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-                    on_select => 'play',
-                    image => $imageURL
-                };
-            }
-            
+           
             $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
         },
         {

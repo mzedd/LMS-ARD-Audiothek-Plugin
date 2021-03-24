@@ -189,7 +189,7 @@ sub listEpisodes {
 
 sub selectImageFormat {
     my $imageURL = shift;
-    my $thumbnailSize = "$serverPrefs->{prefs}->{thumbSize}";
+    my $thumbnailSize = 4.0 * "$serverPrefs->{prefs}->{thumbSize}";
 
     $imageURL =~ s/{ratio}/1x1/i;
     $imageURL =~ s/{width}/$thumbnailSize/i;

@@ -101,14 +101,36 @@ sub listEditorialCategories {
                 push @{$items}, {
                     name => $entry->{title},
                     type => 'link',
-                    url => \&dummy,
-                    image => $imageURL
+                    url => \&listEditorialCategorieMenus,
+                    image => $imageURL,
+                    params => { editorialCategoryID => $entry->{id} }
                 }
             }
 
             $callback->({items => $items});
         }
     );
+}
+
+sub listEditorialCategorieMenus {
+    my ($client, $callback, $args, $params) = @_;
+    my @items;
+
+    push @items, {
+        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_MOSTPLAYED'),
+        type => 'link',
+        url => \&dummy,
+        params => { editorialCategoryID => $params->{editorialCategoryID} }
+    };
+
+    push @items, {
+        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_NEWEST'),
+        type => 'link',
+        url => \&dummy,
+        params => { editorialCategoryID => $params->{editorialCategoryID} }
+    };
+
+    $callback->({items => \@items});
 }
 
 sub dummy {

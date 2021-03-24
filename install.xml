@@ -1,7 +1,7 @@
 <?xml version='1.0' standalone='yes'?>
 <extension>
     <name>PLUGIN_ARDAUDIOTHEK_NAME</name>
-    <icon>plugins/ARDAudiothek/html/images/icon.png</icon>
+    <icon>plugins/ARDAudiothek/html/images/icon_svg.png</icon>
     <creator>Max Zimmermann</creator>
     <defaultState>enabled</defaultState>
     <description>PLUGIN_ARDAUDIOTHEK</description>

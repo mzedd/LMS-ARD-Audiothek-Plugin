@@ -31,7 +31,11 @@ sub initPlugin {
         weight  => 10
     );
 
-    Plugins::ARDAudiothek::API->clearCache();
+    Slim::Menu::TrackInfo->registerInfoProvider( ardaudiothek => (
+            after => 'top',
+            func  => \&trackInfoMenu
+        )
+    );
 }
 
 sub shutdownPlugin {
@@ -412,6 +416,16 @@ sub listEpisodes {
     }
 
     return $items;
+}
+
+sub trackInfoMenu {
+    my ($client, $url, $track, $remoteMeta) = @_;
+
+    $log->info($url);
+    $log->info(Data::Dump::dump($track));
+    $log->info(Data::Dump::dump($remoteMeta));
+
+    return;
 }
 
 sub selectImageFormat {

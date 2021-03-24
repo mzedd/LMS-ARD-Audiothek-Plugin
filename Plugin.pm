@@ -117,7 +117,10 @@ sub listEditorialCategoryMenus {
     my ($client, $callback, $args, $params) = @_;
     my @items;
 
-    $log->info(Data::Dump::dump($params));
+    #    my $item = {
+    #    type => 'link',
+    #    passthrough => [ {editorialCategoryID => $params->{editorialCategoryID}} ]
+    #};
 
     push @items, {
         name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_MOSTPLAYED'),
@@ -130,6 +133,20 @@ sub listEditorialCategoryMenus {
         name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_NEWEST'),
         type => 'link',
         url => \&listNewestEpisodes,
+        passthrough => [ {editorialCategoryID => $params->{editorialCategoryID}} ]
+    };
+
+    push @items, {
+        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_FEATURED_PROGRAMSETS'),
+        type => 'link',
+        url => \&listFeaturedProgramSets,
+        passthrough => [ {editorialCategoryID => $params->{editorialCategoryID}} ]
+    };
+
+    push @items, {
+        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_ALL_PROGRAMSETS'),
+        type => 'link',
+        url => \&listProgramSets,
         passthrough => [ {editorialCategoryID => $params->{editorialCategoryID}} ]
     };
 
@@ -166,6 +183,38 @@ sub listNewestEpisodes {
     );
 }
 
+sub listFeaturedProgramSets {
+    my ($client, $callback, $args, $params) = @_;
+
+    Plugins::ARDAudiothek::API->getEditorialCategoryPlaylists(
+        sub {
+            my $content = shift;
+            my $items = listProgramSet($content->{_embedded}->{"mt:featuredProgramSets"});
+            $callback->({items => $items});
+        },
+        {
+            editorialCategoryID => $params->{editorialCategoryID}
+        }
+    );
+
+}
+
+sub listProgramSets {
+    my ($client, $callback, $args, $params) = @_;
+
+    Plugins::ARDAudiothek::API->getEditorialCategoryPlaylists(
+        sub {
+            my $content = shift;
+            my $items = listProgramSet($content->{_embedded}->{"mt:programSets"});
+            $callback->({items => $items});
+        },
+        {
+            editorialCategoryID => $params->{editorialCategoryID}
+        }
+    );
+
+}
+
 sub listEpisodes {
     my $jsonEpisodeList = shift;
     my $items = [];
@@ -181,6 +230,23 @@ sub listEpisodes {
             favorites_url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
             play => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
             on_select => 'play',
+            image => $imageURL
+        };
+    }
+
+    return $items;
+}
+
+sub listProgramSet {
+    my $jsonProgramSet = shift;
+    my $items = [];
+
+    for my $entry (@{$jsonProgramSet}) {
+        my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
+        
+        push @{$items}, {
+            name => $entry->{title},
+            type => 'link',
             image => $imageURL
         };
     }

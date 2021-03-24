@@ -45,9 +45,25 @@ sub homescreen {
     }
 
     $callback->([
+            { name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_DISCOVER'), type => 'link', url => \&discover },
             { name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES') , type => 'link', url => \&listEditorialCategories },
             { name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_SEARCH'), type => 'search', url => \&searchItems }
     ]);
+}
+
+sub discover {
+    my ($client, $callback, $args) = @_;
+
+    Plugins::ARDAudiothek::API->getDiscoverEpisodes(
+        sub {
+            my $content = shift;
+
+            my $items = listEpisodes($content->{_embedded}->{"mt:stageItems"}->{_embedded}->{"mt:items"});
+            $callback->({ items => $items});
+        },
+        {
+        }
+    );
 }
 
 sub searchItems {

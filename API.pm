@@ -23,6 +23,14 @@ sub getEditorialCategories {
     _call($url, $callback);
 }
 
+sub getEditorialCategoryPlaylists {
+    my ($class, $callback, $args) = @_;
+
+    my $url = API_URL . 'editorialcategories/' . $args->{editorialCategoryID};
+
+    _call($url, $callback);
+}
+
 sub search {
     my ($class, $callback, $args) = @_;
 

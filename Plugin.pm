@@ -101,9 +101,9 @@ sub listEditorialCategories {
                 push @{$items}, {
                     name => $entry->{title},
                     type => 'link',
-                    url => \&listEditorialCategorieMenus,
+                    url => \&listEditorialCategoryMenus,
                     image => $imageURL,
-                    params => { editorialCategoryID => $entry->{id} }
+                    passthrough => [ {editorialCategoryID => $entry->{id}} ]
                 }
             }
 
@@ -112,25 +112,91 @@ sub listEditorialCategories {
     );
 }
 
-sub listEditorialCategorieMenus {
+sub listEditorialCategoryMenus {
     my ($client, $callback, $args, $params) = @_;
     my @items;
+
+    $log->info(Data::Dump::dump($params));
 
     push @items, {
         name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_MOSTPLAYED'),
         type => 'link',
-        url => \&dummy,
-        params => { editorialCategoryID => $params->{editorialCategoryID} }
+        url => \&listMostPlayedEpisodes,
+        passthrough => [ {editorialCategoryID => $params->{editorialCategoryID}} ]
     };
 
     push @items, {
         name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_NEWEST'),
         type => 'link',
-        url => \&dummy,
-        params => { editorialCategoryID => $params->{editorialCategoryID} }
+        url => \&listNewestEpisodes,
+        passthrough => [ {editorialCategoryID => $params->{editorialCategoryID}} ]
     };
 
     $callback->({items => \@items});
+}
+
+sub listMostPlayedEpisodes {
+    my ($client, $callback, $args, $params) = @_;
+
+    Plugins::ARDAudiothek::API->getEditorialCategoryPlaylists(
+        sub {
+            my $content = shift;
+            
+            my $items = [];
+
+            for my $entry (@{$content->{_embedded}->{"mt:mostPlayed"}}) {
+                my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
+                
+                push @{$items}, {
+                    name => $entry->{title},
+                    type => 'audio',
+                    url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
+                    favorites_type => 'link',
+                    favorites_url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
+                    play => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
+                    on_select => 'play',
+                    image => $imageURL
+                };
+            }
+            
+            $callback->({items => $items});
+        },
+        {
+            editorialCategoryID => $params->{editorialCategoryID}
+        }
+    );
+}
+
+sub listNewestEpisodes {
+    my ($client, $callback, $args, $params) = @_;
+
+    Plugins::ARDAudiothek::API->getEditorialCategoryPlaylists(
+        sub {
+            my $content = shift;
+            
+            my $items = [];
+
+            for my $entry (@{$content->{_embedded}->{"mt:items"}}) {
+                my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
+                
+                push @{$items}, {
+                    name => $entry->{title},
+                    type => 'audio',
+                    url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
+                    favorites_type => 'link',
+                    favorites_url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
+                    play => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
+                    on_select => 'play',
+                    image => $imageURL
+                };
+            }
+            
+            $callback->({items => $items});
+        },
+        {
+            editorialCategoryID => $params->{editorialCategoryID}
+        }
+    );
 }
 
 sub dummy {

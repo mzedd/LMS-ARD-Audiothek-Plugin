@@ -117,50 +117,37 @@ sub listEditorialCategoryMenus {
     my ($client, $callback, $args, $params) = @_;
     my @items;
 
-    #    my $item = {
-    #    type => 'link',
-    #    passthrough => [ {editorialCategoryID => $params->{editorialCategoryID}} ]
-    #};
-
-    push @items, {
-        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_MOSTPLAYED'),
-        type => 'link',
-        url => \&listMostPlayedEpisodes,
-        passthrough => [ {editorialCategoryID => $params->{editorialCategoryID}} ]
-    };
-
-    push @items, {
-        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_NEWEST'),
-        type => 'link',
-        url => \&listNewestEpisodes,
-        passthrough => [ {editorialCategoryID => $params->{editorialCategoryID}} ]
-    };
-
-    push @items, {
-        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_FEATURED_PROGRAMSETS'),
-        type => 'link',
-        url => \&listFeaturedProgramSets,
-        passthrough => [ {editorialCategoryID => $params->{editorialCategoryID}} ]
-    };
-
-    push @items, {
-        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_ALL_PROGRAMSETS'),
-        type => 'link',
-        url => \&listProgramSets,
-        passthrough => [ {editorialCategoryID => $params->{editorialCategoryID}} ]
-    };
-
-    $callback->({items => \@items});
-}
-
-sub listMostPlayedEpisodes {
-    my ($client, $callback, $args, $params) = @_;
-
     Plugins::ARDAudiothek::API->getEditorialCategoryPlaylists(
         sub {
-            my $content = shift; 
-            my $items = listEpisodes($content->{_embedded}->{"mt:mostPlayed"});
-            $callback->({items => $items});
+            my $content = shift;
+
+            push @items, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_MOSTPLAYED'),
+                type => 'link',
+                items => listEpisodes($content->{_embedded}->{"mt:mostPlayed"})
+            };
+
+            push @items, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_NEWEST'),
+                type => 'link',
+                items => listEpisodes($content->{_embedded}->{"mt:items"})
+            };
+
+            push @items, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_FEATURED_PROGRAMSETS'),
+                type => 'link',
+                url => \&listFeaturedProgramSets,
+                passthrough => [ {editorialCategoryID => $params->{editorialCategoryID}} ]
+            };
+
+            push @items, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_ALL_PROGRAMSETS'),
+                type => 'link',
+                url => \&listProgramSets,
+                passthrough => [ {editorialCategoryID => $params->{editorialCategoryID}} ]
+            };
+
+            $callback->({items => \@items});
         },
         {
             editorialCategoryID => $params->{editorialCategoryID}

@@ -156,21 +156,19 @@ sub listEditorialCategoryMenus {
 sub programSetDetails {
     my ($client, $callback, $args, $params) = @_;
 
-
     Plugins::ARDAudiothek::API->getProgramSet(
         sub {
             my $content = shift;
-            my $items = [];
 
-            push @{$items}, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_NEWEST'),
-                items => listEpisodes($content->{_embedded}->{"mt:items"})
-            };
-
-            $callback->({items => $items});
+            my $items = listEpisodes($content->{_embedded}->{"mt:items"});
+            my $numberOfElements = $content->{numberOfElements}; 
+           
+            $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
         },
         {
-            programSetID => $params->{programSetID}
+            programSetID => $params->{programSetID},
+            offset      => $args->{index},
+            limit       => $serverPrefs->{prefs}->{itemsPerPage}
         }
     );
 }

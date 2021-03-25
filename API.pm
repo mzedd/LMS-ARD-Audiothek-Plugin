@@ -49,15 +49,18 @@ sub search {
 
     my $url = API_URL . "search/$args->{searchType}?query=$args->{searchWord}&offset=$offset&limit=$args->{limit}";
 
-    $log->info("$url");
-
     _call($url, $callback);
 }
 
 sub getProgramSet {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_URL . 'programsets/' . $args->{programSetID};
+    my $offset = 0;
+    if(defined $args->{offset}) {
+        $offset = $args->{offset};
+    }
+
+    my $url = API_URL . "programsets/$args->{programSetID}?order=desc&offset=$offset&limit=$args->{limit}";
 
     _call($url, $callback);
 }
@@ -92,7 +95,7 @@ sub _call {
             $callback->($content);
         },
         sub {
-            $log->error("An error occured.");
+            $log->error("An error occured calling $url.");
         },
         { timeout => TIMEOUT_IN_S }
     )->get($url);

@@ -54,6 +54,14 @@ sub search {
     _call($url, $callback);
 }
 
+sub getProgramSet {
+    my ($class, $callback, $args) = @_;
+
+    my $url = API_URL . 'programsets/' . $args->{programSetID};
+
+    _call($url, $callback);
+}
+
 sub clearCache {
     $cache->cleanup();
 }

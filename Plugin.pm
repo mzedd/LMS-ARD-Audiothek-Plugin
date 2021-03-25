@@ -215,6 +215,28 @@ sub listProgramSets {
 
 }
 
+sub programSetDetails {
+    my ($client, $callback, $args, $params) = @_;
+
+
+    Plugins::ARDAudiothek::API->getProgramSet(
+        sub {
+            my $content = shift;
+            my $items = [];
+
+            push @{$items}, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_NEWEST'),
+                items => listEpisodes($content->{_embedded}->{"mt:items"})
+            };
+
+            $callback->({items => $items});
+        },
+        {
+            programSetID => $params->{programSetID}
+        }
+    );
+}
+
 sub listEpisodes {
     my $jsonEpisodeList = shift;
     my $items = [];
@@ -247,7 +269,9 @@ sub listProgramSet {
         push @{$items}, {
             name => $entry->{title},
             type => 'link',
-            image => $imageURL
+            image => $imageURL,
+            url => \&programSetDetails,
+            passthrough => [{programSetID => $entry->{id}}]
         };
     }
 

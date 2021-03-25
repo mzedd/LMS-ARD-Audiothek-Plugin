@@ -136,15 +136,13 @@ sub listEditorialCategoryMenus {
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_FEATURED_PROGRAMSETS'),
                 type => 'link',
-                url => \&listFeaturedProgramSets,
-                passthrough => [ {editorialCategoryID => $params->{editorialCategoryID}} ]
+                items => listProgramSet($content->{_embedded}->{"mt:featuredProgramSets"})
             };
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES_MENU_ALL_PROGRAMSETS'),
                 type => 'link',
-                url => \&listProgramSets,
-                passthrough => [ {editorialCategoryID => $params->{editorialCategoryID}} ]
+                items => listProgramSet($content->{_embedded}->{"mt:programSets"})
             };
 
             $callback->({items => \@items});
@@ -153,53 +151,6 @@ sub listEditorialCategoryMenus {
             editorialCategoryID => $params->{editorialCategoryID}
         }
     );
-}
-
-sub listNewestEpisodes {
-    my ($client, $callback, $args, $params) = @_;
-
-    Plugins::ARDAudiothek::API->getEditorialCategoryPlaylists(
-        sub {
-            my $content = shift;
-            my $items = listEpisodes($content->{_embedded}->{"mt:items"});
-            $callback->({items => $items});
-        },
-        {
-            editorialCategoryID => $params->{editorialCategoryID}
-        }
-    );
-}
-
-sub listFeaturedProgramSets {
-    my ($client, $callback, $args, $params) = @_;
-
-    Plugins::ARDAudiothek::API->getEditorialCategoryPlaylists(
-        sub {
-            my $content = shift;
-            my $items = listProgramSet($content->{_embedded}->{"mt:featuredProgramSets"});
-            $callback->({items => $items});
-        },
-        {
-            editorialCategoryID => $params->{editorialCategoryID}
-        }
-    );
-
-}
-
-sub listProgramSets {
-    my ($client, $callback, $args, $params) = @_;
-
-    Plugins::ARDAudiothek::API->getEditorialCategoryPlaylists(
-        sub {
-            my $content = shift;
-            my $items = listProgramSet($content->{_embedded}->{"mt:programSets"});
-            $callback->({items => $items});
-        },
-        {
-            editorialCategoryID => $params->{editorialCategoryID}
-        }
-    );
-
 }
 
 sub programSetDetails {

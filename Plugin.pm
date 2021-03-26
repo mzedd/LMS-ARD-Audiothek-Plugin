@@ -44,7 +44,7 @@ sub homescreen {
         return;
     }
 
-    my @items = {};
+    my @items;
 
     Plugins::ARDAudiothek::API->getHomescreen(
         sub {

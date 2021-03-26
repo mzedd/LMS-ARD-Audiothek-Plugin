@@ -53,7 +53,7 @@ sub homescreen {
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_SEARCH'),
                 type => 'search',
-                url => \&searchItems
+                url => \&search
             };
 
             push @items, {
@@ -85,8 +85,49 @@ sub homescreen {
     );
 }
 
-sub searchItems {
+sub search {
     my ($client, $callback, $args) = @_;
+    my @items;
+
+    push @items, {
+        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_PROGRAMSETS'),
+        type => 'link',
+        url => \&searchProgramSets,
+        passthrough => [{ search => $args->{search} }]
+    };
+
+    push @items, {
+        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_ITEMS'),
+        type => 'link',
+        url => \&searchItems,
+        passthrough => [{ search => $args->{search} }]
+    };
+
+    $callback->({ items => \@items });
+}
+
+sub searchProgramSets {
+    my ($client, $callback, $args, $params) = @_;
+
+    Plugins::ARDAudiothek::API->search(
+        sub {
+            my $content = shift;
+            
+            my $items = listProgramSet($content->{_embedded}->{"mt:programSets"});
+            my $numberOfElements = $content->{numberOfElements}; 
+           
+            $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
+        },
+        {
+            searchType  => 'programsets',
+            searchWord  => $params->{search},
+            limit       => $serverPrefs->{prefs}->{itemsPerPage}
+        }
+    );
+}
+
+sub searchItems {
+    my ($client, $callback, $args, $params) = @_;
 
     Plugins::ARDAudiothek::API->search(
         sub {
@@ -99,7 +140,7 @@ sub searchItems {
         },
         {
             searchType  => 'items',
-            searchWord  => $args->{search},
+            searchWord  => $params->{search},
             offset      => $args->{index},
             limit       => $serverPrefs->{prefs}->{itemsPerPage}
         }

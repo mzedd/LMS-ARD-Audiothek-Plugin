@@ -57,15 +57,27 @@ sub homescreen {
             };
 
             push @items, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES'),
+                type => 'link',
+                url => \&listEditorialCategories
+            };
+
+            push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_DISCOVER'),
                 type => 'link',
                 items => listEpisodes($content->{_embedded}->{"mt:stageItems"}->{_embedded}->{"mt:items"})
             };
 
             push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES'),
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_OUR_FAVORITES'),
                 type => 'link',
-                url => \&listEditorialCategories
+                items => listCollections($content->{_embedded}->{"mt:editorialCollections"}->{_embedded}->{"mt:editorialCollections"})
+            };
+
+            push @items, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_TOPICS'),
+                type => 'link',
+                items => listCollections($content->{_embedded}->{"mt:featuredPlaylists"}->{_embedded}->{"mt:editorialCollections"})
             };
 
             push @items, {
@@ -246,6 +258,45 @@ sub programSetDetails {
         },
         {
             programSetID => $params->{programSetID},
+            offset      => $args->{index},
+            limit       => $serverPrefs->{prefs}->{itemsPerPage}
+        }
+    );
+}
+
+sub listCollections {
+    my $jsonCollections = shift;
+    my $items = [];
+
+    for my $entry (@{$jsonCollections}) {
+        my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
+        
+        push @{$items}, {
+            name => $entry->{title},
+            type => 'link',
+            image => $imageURL,
+            url => \&listCollectionEpisodes,
+            passthrough => [{collectionID => $entry->{id}}]
+        };
+    }
+
+    return $items;
+}
+
+sub listCollectionEpisodes {
+    my ($client, $callback, $args, $params) = @_;
+
+    Plugins::ARDAudiothek::API->getCollectionContent(
+        sub {
+            my $content = shift;
+
+            my $items = listEpisodes($content->{_embedded}->{"mt:items"});
+            my $numberOfElements = $content->{numberOfElements}; 
+           
+            $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
+        },
+        {
+            collectionID => $params->{collectionID},
             offset      => $args->{index},
             limit       => $serverPrefs->{prefs}->{itemsPerPage}
         }

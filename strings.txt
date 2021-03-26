@@ -42,6 +42,14 @@ PLUGIN_ARDAUDIOTHEK_ALL_PROGRAMSETS
 	EN	All program sets
 	DE	Alle Sendungen
 
+PLUGIN_ARDAUDIOTHEK_OUR_FAVORITES
+	EN	Our favorites
+	DE	Unsere Favoriten
+
+PLUGIN_ARDAUDIOTHEK_TOPICS
+	EN	Topics
+	DE	Themen
+
 PLUGIN_ARDAUDIOTHEK_ITEMS
 	EN	Episodes
 	DE	Episoden

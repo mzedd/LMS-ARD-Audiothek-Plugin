@@ -65,6 +65,20 @@ sub getProgramSet {
     _call($url, $callback);
 }
 
+sub getCollectionContent {
+    my ($class, $callback, $args) = @_;
+
+    my $offset = 0;
+    if(defined $args->{offset}) {
+        $offset = $args->{offset};
+    }
+
+    my $url = API_URL . "editorialcollections/$args->{collectionID}?offset=$offset&limit=$args->{limit}";
+
+    _call($url, $callback);
+
+}
+
 sub clearCache {
     $cache->cleanup();
 }

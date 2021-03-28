@@ -30,6 +30,8 @@ sub initPlugin {
         is_app  => 1,
         weight  => 10
     );
+
+    Plugins::ARDAudiothek::API->clearCache();
 }
 
 sub shutdownPlugin {
@@ -60,6 +62,12 @@ sub homescreen {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES'),
                 type => 'link',
                 url => \&listEditorialCategories
+            };
+
+            push @items, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_ORGANIZATIONS'),
+                type => 'link',
+                url => \&listOrganizations
             };
 
             push @items, {
@@ -225,20 +233,101 @@ sub listEditorialCategoryMenus {
     );
 }
 
+sub listOrganizations {
+    my ($client, $callback, $args) = @_;
+
+    Plugins::ARDAudiothek::API->getOrganizations(
+        sub {
+            my $content = shift;
+            my $items;
+
+            for my $entry (@{$content->{_embedded}->{"mt:organizations"}}) { 
+                push @{$items}, {
+                    name => $entry->{name},
+                    type => 'link',
+                    items => listPublicationServices($entry->{_embedded}->{"mt:publicationServices"})
+                };
+            }
+
+            $callback->({items => $items});
+        }
+    );
+}
+
+sub listPublicationServices {
+    my $jsonPublicationServices = shift;
+    my $items = [];
+
+    if(ref $jsonPublicationServices eq ref {}) {
+        my $imageURL = selectImageFormat($jsonPublicationServices->{_links}->{"mt:image"}->{href});
+
+        push @{$items}, {
+            name => $jsonPublicationServices->{title},
+            type => 'link',
+            image => $imageURL,
+            items => publicationServiceDetails($jsonPublicationServices)
+        }
+    } else {
+        for my $entry (@{$jsonPublicationServices}) {
+            my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
+            
+            push @{$items}, {
+                name => $entry->{title},
+                type => 'link',
+                image => $imageURL,
+                items => publicationServiceDetails($entry)
+            };
+        }
+    }
+
+    return $items;
+}
+
+sub publicationServiceDetails {
+    my $content = shift;
+    my $items = [];
+
+    $items = listProgramSet($content->{_embedded}->{"mt:programSets"});
+
+    if($content->{_embedded}->{"mt:liveStreams"}->{numberOfElements} == 1) {
+       my $imageURL = selectImageFormat($content->{_links}->{"mt:image"}->{href});
+       unshift @{$items}, {
+           name => 'Livestream',
+           type => 'audio',
+           play => $content->{_embedded}->{"mt:liveStreams"}->{_embedded}->{"mt:items"}->{stream}->{streamUrl},
+           image => $imageURL
+       };
+    }
+
+    return $items;
+}
+
 sub listProgramSet {
     my $jsonProgramSet = shift;
     my $items = [];
 
-    for my $entry (@{$jsonProgramSet}) {
-        my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
+    if(ref $jsonProgramSet eq ref {}) {
+        my $imageURL = selectImageFormat($jsonProgramSet->{_links}->{"mt:image"}->{href});
         
         push @{$items}, {
-            name => $entry->{title},
+            name => $jsonProgramSet->{title},
             type => 'link',
             image => $imageURL,
             url => \&programSetDetails,
-            passthrough => [{programSetID => $entry->{id}}]
+            passthrough => [{programSetID => $jsonProgramSet->{id}}]
         };
+    } else {
+        for my $entry (@{$jsonProgramSet}) {
+            my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
+            
+            push @{$items}, {
+                name => $entry->{title},
+                type => 'link',
+                image => $imageURL,
+                url => \&programSetDetails,
+                passthrough => [{programSetID => $entry->{id}}]
+            };
+        }
     }
 
     return $items;
@@ -246,7 +335,7 @@ sub listProgramSet {
 
 sub programSetDetails {
     my ($client, $callback, $args, $params) = @_;
-
+    
     Plugins::ARDAudiothek::API->getProgramSet(
         sub {
             my $content = shift;

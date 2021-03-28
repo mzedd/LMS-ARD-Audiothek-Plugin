@@ -76,6 +76,14 @@ sub getCollectionContent {
     my $url = API_URL . "editorialcollections/$args->{collectionID}?offset=$offset&limit=$args->{limit}";
 
     _call($url, $callback);
+}
+
+sub getOrganizations {
+    my ($class, $callback, $args) = @_;
+
+    my $url = API_URL . 'organizations';
+
+    _call($url, $callback);
 
 }
 

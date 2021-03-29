@@ -411,7 +411,9 @@ sub listEpisodes {
             favorites_url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
             play => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
             on_select => 'play',
-            image => $imageURL
+            image => $imageURL,
+            description => $entry->{synopsis},
+            duration => $entry->{duration}
         };
     }
 

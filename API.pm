@@ -87,6 +87,14 @@ sub getOrganizations {
 
 }
 
+sub getItem {
+    my ($class, $callback, $args) = @_;
+
+    my $url = API_URL . 'items/' . $args->{id};
+
+    _call($url, $callback);
+}
+
 sub clearCache {
     $cache->cleanup();
 }

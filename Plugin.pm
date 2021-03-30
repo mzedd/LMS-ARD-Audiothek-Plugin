@@ -31,6 +31,8 @@ sub initPlugin {
         weight  => 10
     );
 
+    Slim::Player::ProtocolHandlers->registerHandler('ardaudiothek', 'Plugins::ARDAudiothek::ProtocolHandler');    
+
     Slim::Menu::TrackInfo->registerInfoProvider( ardaudiothek => (
             after => 'top',
             func  => \&trackInfoMenu
@@ -406,10 +408,10 @@ sub listEpisodes {
         push @{$items}, {
             name => $entry->{title},
             type => 'audio',
-            url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-            favorites_type => 'link',
-            favorites_url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-            play => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
+            url => 'ardaudiothek://' . $entry->{id},
+            favorites_type => 'audio',
+            favorites_url => 'ardaudiothek://' . $entry->{id},
+            play => 'ardaudiothek://' . $entry->{id},
             on_select => 'play',
             image => $imageURL,
             description => $entry->{synopsis},

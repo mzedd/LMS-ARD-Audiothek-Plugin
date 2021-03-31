@@ -29,7 +29,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - run: mkdir -p ARDAudiothek
-      - run: cp -r API.pm HTML/ install.xml Plugin.pm strings.txt ARDAudiothek/.
+      - run: cp -r API.pm HTML/ install.xml Plugin.pm ProtocolHandler.pm strings.txt ARDAudiothek/.
       - run: zip -r ARDAudiothek.zip ARDAudiothek
       - name: Upload ZIP file
         id: upload-zip-file

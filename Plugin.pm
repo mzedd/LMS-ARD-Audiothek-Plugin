@@ -311,10 +311,11 @@ sub listProgramSet {
         my $imageURL = selectImageFormat($jsonProgramSet->{_links}->{"mt:image"}->{href});
         
         push @{$items}, {
-            name => $jsonProgramSet->{title},
-            type => 'link',
+            name  => $jsonProgramSet->{title},
+            type  => 'playlist',
             image => $imageURL,
             url => \&programSetDetails,
+            play => 'ardaudiothek://playlist/' . $jsonProgramSet->{id},
             passthrough => [{programSetID => $jsonProgramSet->{id}}]
         };
     } else {
@@ -323,9 +324,10 @@ sub listProgramSet {
             
             push @{$items}, {
                 name => $entry->{title},
-                type => 'link',
+                type => 'playlist',
                 image => $imageURL,
                 url => \&programSetDetails,
+                play => 'ardaudiothek://playlist/' . $entry->{id},
                 passthrough => [{programSetID => $entry->{id}}]
             };
         }
@@ -404,7 +406,8 @@ sub listEpisodes {
             name => $episode->{title},
             type => 'audio',
             favorites_type => 'audio',
-            play => 'ardaudiothek://' . $episode->{id},
+            play => 'ardaudiothek://items/' . $episode->{id},
+            #play => $episode->{url},
             on_select => 'play',
             image => selectImageFormat($episode->{image}),
             description => $episode->{description},

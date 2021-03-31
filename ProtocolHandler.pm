@@ -1,11 +1,11 @@
 package Plugins::ARDAudiothek::ProtocolHandler;
 
-# Handler for ardaudiothek:// URLS
+# Pseudohandler for ardaudiothek:// URLS
 
 use strict;
-#use base qw(Slim::Player::Protocols::HTTPS);
 
 use Slim::Utils::Log;
+use Plugins::ARDAudiothek::Plugin;
 use Plugins::ARDAudiothek::API;
 
 my $log = logger('plugin.ardaudiothek');
@@ -13,21 +13,39 @@ my $log = logger('plugin.ardaudiothek');
 sub overridePlayback {
     my ($class, $client, $url) = @_;
 
-    my $id = $url;
-    $id =~ s/ardaudiothek:\/\///;
+    my $id = _itemIdFromUrl($url);
 
     Plugins::ARDAudiothek::API->getItem(
         sub {
-            my $content = shift;
+            my $episode = Plugins::ARDAudiothek::Plugin::episodeDetails(shift);
+            my $image = Plugins::ARDAudiothek::Plugin::selectImageFormat($episode->{image});
             my @items;
-
-            $log->info($content->{_links}->{"mt:bestQualityPlaybackUrl"}->{href});
-
-            push @items, Slim::Schema->updateOrCreate({ url => $content->{_links}->{"mt:bestQualityPlaybackUrl"}->{href} });
+            
+            # the following is a bit hacky, but it works. Thanks to:
+            # https://forums.slimdevices.com/showthread.php?104357-Playlist-addition-in-overridePlayback-function&highlight=Protocol+Handler+ProtocolHandler
+            # https://forums.slimdevices.com/showthread.php?106039-how-does-metadata-(artwork)-update-works-for-players&p=860790&viewfull=1#post860790
+            push @items, Slim::Schema->updateOrCreate({ 
+                    url => $episode->{url}
+                }
+            );
             
             $client->execute([ 'playlist', 'clear' ]);
 	        $client->execute([ 'playlist', 'addtracks', 'listRef', \@items ]);
 	        $client->execute([ 'play' ]);
+
+            $client->playingSong->pluginData( wmaMeta => {
+                    icon => $image,
+                    cover => $image,
+                    title => $episode->{title},
+                    artitst => $episode->{show},
+                    album => $episode->{show},
+                    description => $episode->{description}
+                }
+            );
+
+            Slim::Control::Request::notifyFromArray( $client, ['newmetadata']);
+
+            $log->info($image);
         },{
             id => $id
         }
@@ -45,67 +63,14 @@ sub contentType {
 }
 
 sub isRemote { 1 }
-#sub new {
-#    my ($class, $args) = @_;
-#
-#    my $client = $args->{client};
-#    my $song = $args->{song};
-#    my $streamURL = $song->streamURL() || return;
-#
-#
-#    $log->info("Moin");
-#
-#    $log->info($streamURL);
-#}
 
-#sub scanUrl {
-#    my ($class, $url, $args) = @_;
-#	
-#    $log->info($url);
-#
-#    my $id = $url;
-#    $id =~ s/ardaudiothek:\/\///;
-#
-#    $log->info(Data::Dump::dump($args->{song}->currentTrack()));
-#
-#    Plugins::ARDAudiothek::API->getItem(
-#        sub {
-#            my $content;
-#
-#            $args->{cb}->($content->{_links}->{"mt:bestQualityPlaybackUrl"}->{href});
-#        },{
-#            id => $id
-#        }
-#    );
-#
-#}
-
-#sub scanUrl {
-#    my ($class, $url, $args) = @_;
-#	$args->{cb}->( $args->{song}->currentTrack() );
-#}
-#
-#sub getNextTrack {
-#    my ($class, $song, $successCb, $errorCb) = @_;
-#    
-#    my $url = $song->currentTrack()->url;
-#    my $id = $url;
-#    $id =~ s/ardaudiothek:\/\///;
-#
-#    Plugins::ARDAudiothek::API->getItem(
-#        sub {
-#            my $content;
-#
-#            $successCb->($content->{_links}->{"mt:bestQualityPlaybackUrl"}->{href});
-#        },{
-#            id => $id
-#        }
-#    );
-#}
-#
-#sub gotNextTrack {
-#    $log->info("Moin");
-#}
-
+sub _itemIdFromUrl {
+    my $url = shift;
+    
+    my $id = $url;
+    $id =~ s/ardaudiothek:\/\///;
+    
+    return $id;
+}
 
 1;

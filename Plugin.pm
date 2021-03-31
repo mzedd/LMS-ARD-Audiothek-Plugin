@@ -33,11 +33,6 @@ sub initPlugin {
 
     Slim::Player::ProtocolHandlers->registerHandler('ardaudiothek', 'Plugins::ARDAudiothek::ProtocolHandler');    
 
-    Slim::Menu::TrackInfo->registerInfoProvider( ardaudiothek => (
-            after => 'top',
-            func  => \&trackInfoMenu
-        )
-    );
 }
 
 sub shutdownPlugin {
@@ -403,33 +398,39 @@ sub listEpisodes {
     my $items = [];
 
     for my $entry (@{$jsonEpisodeList}) {
-        my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
-        
+        my $episode = episodeDetails($entry);
+
         push @{$items}, {
-            name => $entry->{title},
+            name => $episode->{title},
             type => 'audio',
-            url => 'ardaudiothek://' . $entry->{id},
             favorites_type => 'audio',
-            favorites_url => 'ardaudiothek://' . $entry->{id},
-            play => 'ardaudiothek://' . $entry->{id},
+            play => 'ardaudiothek://' . $episode->{id},
             on_select => 'play',
-            image => $imageURL,
-            description => $entry->{synopsis},
-            duration => $entry->{duration}
+            image => selectImageFormat($episode->{image}),
+            description => $episode->{description},
+            duration => $episode->{duration},
+            line1 => $episode->{title},
+            line2 => $episode->{show}
         };
     }
 
     return $items;
 }
 
-sub trackInfoMenu {
-    my ($client, $url, $track, $remoteMeta) = @_;
+sub episodeDetails {
+    my $item = shift;
 
-    $log->info($url);
-    $log->info(Data::Dump::dump($track));
-    $log->info(Data::Dump::dump($remoteMeta));
+    my %episode = (
+        url => $item->{_links}->{"mt:bestQualityPlaybackUrl"}->{href}, 
+        image => $item->{_links}->{"mt:image"}->{href},
+        duration => $item->{duration},
+        id => $item->{id},
+        description => $item->{synopsis},
+        title => $item->{title},
+        show => $item->{_embedded}->{"mt:programSet"}->{title}
+    );
 
-    return;
+    return \%episode;
 }
 
 sub selectImageFormat {

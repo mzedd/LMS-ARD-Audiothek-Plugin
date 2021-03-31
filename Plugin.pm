@@ -31,7 +31,8 @@ sub initPlugin {
         weight  => 10
     );
 
-    Plugins::ARDAudiothek::API->clearCache();
+    Slim::Player::ProtocolHandlers->registerHandler('ardaudiothek', 'Plugins::ARDAudiothek::ProtocolHandler');    
+
 }
 
 sub shutdownPlugin {
@@ -397,21 +398,39 @@ sub listEpisodes {
     my $items = [];
 
     for my $entry (@{$jsonEpisodeList}) {
-        my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
-        
+        my $episode = episodeDetails($entry);
+
         push @{$items}, {
-            name => $entry->{title},
+            name => $episode->{title},
             type => 'audio',
-            url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-            favorites_type => 'link',
-            favorites_url => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-            play => $entry->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
+            favorites_type => 'audio',
+            play => 'ardaudiothek://' . $episode->{id},
             on_select => 'play',
-            image => $imageURL
+            image => selectImageFormat($episode->{image}),
+            description => $episode->{description},
+            duration => $episode->{duration},
+            line1 => $episode->{title},
+            line2 => $episode->{show}
         };
     }
 
     return $items;
+}
+
+sub episodeDetails {
+    my $item = shift;
+
+    my %episode = (
+        url => $item->{_links}->{"mt:bestQualityPlaybackUrl"}->{href}, 
+        image => $item->{_links}->{"mt:image"}->{href},
+        duration => $item->{duration},
+        id => $item->{id},
+        description => $item->{synopsis},
+        title => $item->{title},
+        show => $item->{_embedded}->{"mt:programSet"}->{title}
+    );
+
+    return \%episode;
 }
 
 sub selectImageFormat {

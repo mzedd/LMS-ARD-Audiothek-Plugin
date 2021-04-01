@@ -1,6 +1,6 @@
 package Plugins::ARDAudiothek::ProtocolHandler;
 
-# Pseudohandler for ardaudiothek:// URLS
+# Protocolhandler for ardaudiothek:// URLS
 
 use strict;
 
@@ -21,18 +21,22 @@ sub scanUrl {
 
     Plugins::ARDAudiothek::API->getItem(sub{
             my $episode = Plugins::ARDAudiothek::Plugin::episodeDetails(shift);
-
             my $url = $episode->{url};
-
-            my $meta => {
-                title => 'moin'
-            };
-
 
             Slim::Utils::Scanner::Remote->scanURL($url, $args);
 
+            my $client = $args->{client}->master;
+            my $image = Plugins::ARDAudiothek::Plugin::selectImageFormat($episode->{image});
 
-            $args->{song}->pluginData(info => $meta);
+            $client->playingSong->pluginData( wmaMeta => {
+                    icon   => $image,
+                    cover  => $image,
+                    artist => $episode->{show},
+                    title  => $episode->{title}
+                }
+            );
+
+            Slim::Control::Request::notifyFromArray( $client, [ 'newmetadata' ] );
         },{
             id => $id
         }
@@ -77,20 +81,6 @@ sub explodePlaylist {
     else {
         $callback->([]);
     }
-}
-
-sub getMetadataFor {
-    my ($class, $client, $uri) = @_;
-
-    my $content = Plugins::ARDAudiothek::API::getItemFromCache(_itemIdFromUri($uri));
-    my $episode = Plugins::ARDAudiothek::Plugin::episodeDetails($content);
-
-    return {
-        title  => $episode->{title},
-        artist => $episode->{show},
-        image => Plugins::ARDAudiothek::Plugin::selectImageFormat($episode->{image}),
-        cover => Plugins::ARDAudiothek::Plugin::selectImageFormat($episode->{image})
-    };
 }
 
 sub _itemIdFromUri {

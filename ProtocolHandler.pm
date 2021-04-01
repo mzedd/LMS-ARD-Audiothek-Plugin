@@ -23,8 +23,16 @@ sub scanUrl {
             my $episode = Plugins::ARDAudiothek::Plugin::episodeDetails(shift);
 
             my $url = $episode->{url};
-           
+
+            my $meta => {
+                title => 'moin'
+            };
+
+
             Slim::Utils::Scanner::Remote->scanURL($url, $args);
+
+
+            $args->{song}->pluginData(info => $meta);
         },{
             id => $id
         }
@@ -69,6 +77,20 @@ sub explodePlaylist {
     else {
         $callback->([]);
     }
+}
+
+sub getMetadataFor {
+    my ($class, $client, $uri) = @_;
+
+    my $content = Plugins::ARDAudiothek::API::getItemFromCache(_itemIdFromUri($uri));
+    my $episode = Plugins::ARDAudiothek::Plugin::episodeDetails($content);
+
+    return {
+        title  => $episode->{title},
+        artist => $episode->{show},
+        image => Plugins::ARDAudiothek::Plugin::selectImageFormat($episode->{image}),
+        cover => Plugins::ARDAudiothek::Plugin::selectImageFormat($episode->{image})
+    };
 }
 
 sub _itemIdFromUri {

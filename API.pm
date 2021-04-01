@@ -99,6 +99,20 @@ sub clearCache {
     $cache->cleanup();
 }
 
+sub getItemFromCache {
+    my $id = shift;
+
+    my $url = API_URL . 'items/' . $id;
+    my $cacheKey = md5_hex($url);
+
+    if($cacheKey && (my $cached = $cache->get($cacheKey))) {
+        $log->info("Using cached data for url: $url");
+        return $cached;
+    }
+
+    return undef;
+}
+
 # low level api call
 # caching is inspired by 
 # https://forums.slimdevices.com/showthread.php?104217-Menu-handling-problem&p=828666&viewfull=1 and

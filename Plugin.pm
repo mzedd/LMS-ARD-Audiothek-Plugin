@@ -315,7 +315,7 @@ sub listProgramSet {
             type  => 'playlist',
             image => $imageURL,
             url => \&programSetDetails,
-            play => 'ardaudiothek://playlist/' . $jsonProgramSet->{id},
+            play => 'ardaudiothek://programset/' . $jsonProgramSet->{id},
             passthrough => [{programSetID => $jsonProgramSet->{id}}]
         };
     } else {
@@ -327,7 +327,7 @@ sub listProgramSet {
                 type => 'playlist',
                 image => $imageURL,
                 url => \&programSetDetails,
-                play => 'ardaudiothek://playlist/' . $entry->{id},
+                play => 'ardaudiothek://programset/' . $entry->{id},
                 passthrough => [{programSetID => $entry->{id}}]
             };
         }
@@ -365,9 +365,10 @@ sub listCollections {
         
         push @{$items}, {
             name => $entry->{title},
-            type => 'link',
+            type => 'playlist',
             image => $imageURL,
             url => \&listCollectionEpisodes,
+            play => 'ardaudiothek://collection/' . $entry->{id},
             passthrough => [{collectionID => $entry->{id}}]
         };
     }
@@ -406,7 +407,7 @@ sub listEpisodes {
             name => $episode->{title},
             type => 'audio',
             favorites_type => 'audio',
-            play => 'ardaudiothek://items/' . $episode->{id},
+            play => 'ardaudiothek://episode/' . $episode->{id},
             #play => $episode->{url},
             on_select => 'play',
             image => selectImageFormat($episode->{image}),

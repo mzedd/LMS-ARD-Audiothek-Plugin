@@ -74,32 +74,32 @@ sub homescreen {
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_DISCOVER'),
                 type => 'link',
-                items => listEpisodes($content->{_embedded}->{"mt:stageItems"}->{_embedded}->{"mt:items"})
+                items => episodelistToOPML($content->{discoverEpisodelist})
             };
 
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_OUR_FAVORITES'),
-                type => 'link',
-                items => listCollections($content->{_embedded}->{"mt:editorialCollections"}->{_embedded}->{"mt:editorialCollections"})
-            };
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_TOPICS'),
-                type => 'link',
-                items => listCollections($content->{_embedded}->{"mt:featuredPlaylists"}->{_embedded}->{"mt:editorialCollections"})
-            };
-
+            #            push @items, {
+            #                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_OUR_FAVORITES'),
+            #                type => 'link',
+            #                items => listCollections($content->{_embedded}->{"mt:editorialCollections"}->{_embedded}->{"mt:editorialCollections"})
+            #            };
+            #
+            #            push @items, {
+            #                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_TOPICS'),
+            #                type => 'link',
+            #                items => listCollections($content->{_embedded}->{"mt:featuredPlaylists"}->{_embedded}->{"mt:editorialCollections"})
+            #            };
+            #
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_MOSTPLAYED'),
                 type => 'link',
-                items => listEpisodes($content->{_embedded}->{"mt:mostPlayed"}->{_embedded}->{"mt:items"})
+                items => episodelistToOPML($content->{mostPlayedEpisodelist})
             };
 
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_FEATURED_PROGRAMSETS'),
-                type => 'items',
-                items => listProgramSet($content->{_embedded}->{"mt:featuredProgramSets"}->{_embedded}->{"mt:programSets"})
-            };
+            #            push @items, {
+            #                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_FEATURED_PROGRAMSETS'),
+            #                type => 'items',
+            #                items => listProgramSet($content->{_embedded}->{"mt:featuredProgramSets"}->{_embedded}->{"mt:programSets"})
+            #            };
 
             $callback->({ items => \@items});
         }
@@ -393,14 +393,12 @@ sub listCollectionEpisodes {
     );
 }
 
-sub listEpisodes {
-    my $jsonEpisodeList = shift;
-    my $items = [];
+sub episodelistToOPML {
+    my $episodelist = shift;
+    my @items;
 
-    for my $entry (@{$jsonEpisodeList}) {
-        my $episode = episodeDetails($entry);
-
-        push @{$items}, {
+    for my $episode (@{$episodelist}) {
+        push @items, {
             name => $episode->{title},
             type => 'audio',
             favorites_type => 'audio',
@@ -414,7 +412,31 @@ sub listEpisodes {
         };
     }
 
-    return $items;
+    return \@items;
+}
+
+sub listEpisodes {
+    my $jsonEpisodeList = shift;
+    my @items;
+
+    for my $entry (@{$jsonEpisodeList}) {
+        my $episode = episodeDetails($entry);
+
+        push @items, {
+            name => $episode->{title},
+            type => 'audio',
+            favorites_type => 'audio',
+            play => 'ardaudiothek://episode/' . $episode->{id},
+            on_select => 'play',
+            image => selectImageFormat($episode->{image}),
+            description => $episode->{description},
+            duration => $episode->{duration},
+            line1 => $episode->{title},
+            line2 => $episode->{show}
+        };
+    }
+
+    return \@items;
 }
 
 sub episodeDetails {

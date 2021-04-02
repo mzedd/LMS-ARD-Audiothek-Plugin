@@ -20,7 +20,21 @@ sub getHomescreen {
 
     my $url = API_URL . 'homescreen';
 
-    _call($url, $callback);
+    my $adapter = sub {
+        my $content = shift;
+
+        my $discoverEpisodelist = _episodelistFromJson($content->{_embedded}->{"mt:stageItems"}->{_embedded}->{"mt:items"});
+        my $mostPlayedEpisodelist = _episodelistFromJson($content->{_embedded}->{"mt:mostPlayed"}->{_embedded}->{"mt:items"});
+
+        my $homescreen = {
+            discoverEpisodelist => $discoverEpisodelist,
+            mostPlayedEpisodelist => $mostPlayedEpisodelist
+        };
+
+        $callback->($homescreen);
+    };
+
+    _call($url, $adapter);
 }
 
 sub getEditorialCategories {
@@ -111,6 +125,34 @@ sub getItemFromCache {
     }
 
     return undef;
+}
+
+sub _episodelistFromJson {
+    my $jsonEpisodeList = shift;
+    my @episodeList;
+
+    for my $jsonEpisode (@{$jsonEpisodeList}) {
+
+        push (@episodeList, _episodeFromJson($jsonEpisode)); 
+    }
+
+    return \@episodeList;
+}
+
+sub _episodeFromJson {
+    my $jsonEpisode = shift;
+    
+    my $episode = {
+        url => $jsonEpisode->{_links}->{"mt:bestQualityPlaybackUrl"}->{href}, 
+        image => $jsonEpisode->{_links}->{"mt:image"}->{href},
+        duration => $jsonEpisode->{duration},
+        id => $jsonEpisode->{id},
+        description => $jsonEpisode->{synopsis},
+        title => $jsonEpisode->{title},
+        show => $jsonEpisode->{_embedded}->{"mt:programSet"}->{title}
+    };
+
+    return $episode;
 }
 
 # low level api call

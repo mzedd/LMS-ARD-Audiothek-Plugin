@@ -12,8 +12,6 @@ use Plugins::ARDAudiothek::API;
 
 my $log = logger('plugin.ardaudiothek');
 
-use constant PLAYLIST_LIMIT => 1000;
-
 sub scanUrl {
     my ($class, $uri, $args) = @_;
 
@@ -45,57 +43,6 @@ sub scanUrl {
     );
 
     return;
-}
-
-sub explodePlaylist {
-    my ($class, $client, $uri, $callback) = @_;
-
-    if($uri =~ /ardaudiothek:\/\/episode\/[0-9]+/) {
-        $callback->([$uri]);
-    }
-    elsif($uri =~ /ardaudiothek:\/\/programset\/[0-9]+/) {
-        my $id = _itemIdFromUri($uri);
-
-        Plugins::ARDAudiothek::API->getProgramSet(
-            sub {
-                my $content = shift;
-                my @episodeUris;
-
-                for my $episode (@{$content->{_embedded}->{"mt:items"}}) {
-                    push(@episodeUris, 'ardaudiothek://episode/' . $episode->{id});
-                }
-                
-                $callback->([@episodeUris]);
-            },{
-                programSetID => $id,
-                offset => 0,
-                limit => PLAYLIST_LIMIT
-            }
-        );
-    } 
-    elsif($uri =~ /ardaudiothek:\/\/collection\/[0-9]+/) {
-        my $id = _itemIdFromUri($uri);
-
-        Plugins::ARDAudiothek::API->getCollectionContent(
-            sub {
-                my $content = shift;
-                my @episodeUris;
-
-                for my $episode (@{$content->{_embedded}->{"mt:items"}}) {
-                    push(@episodeUris, 'ardaudiothek://episode/' . $episode->{id});
-                }
-                
-                $callback->([@episodeUris]);
-            },{
-                collectionID => $id,
-                offset => 0,
-                limit => PLAYLIST_LIMIT
-            }
-        );
-    }
-    else {
-        $callback->([]);
-    }
 }
 
 sub getMetadataFor {

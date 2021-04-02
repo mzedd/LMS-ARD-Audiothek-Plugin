@@ -312,10 +312,9 @@ sub listProgramSet {
         
         push @{$items}, {
             name  => $jsonProgramSet->{title},
-            type  => 'playlist',
+            type  => 'link',
             image => $imageURL,
             url => \&programSetDetails,
-            play => 'ardaudiothek://programset/' . $jsonProgramSet->{id},
             passthrough => [{programSetID => $jsonProgramSet->{id}}]
         };
     } else {
@@ -324,10 +323,9 @@ sub listProgramSet {
             
             push @{$items}, {
                 name => $entry->{title},
-                type => 'playlist',
+                type => 'link',
                 image => $imageURL,
                 url => \&programSetDetails,
-                play => 'ardaudiothek://programset/' . $entry->{id},
                 passthrough => [{programSetID => $entry->{id}}]
             };
         }
@@ -365,10 +363,9 @@ sub listCollections {
         
         push @{$items}, {
             name => $entry->{title},
-            type => 'playlist',
+            type => 'link',
             image => $imageURL,
             url => \&listCollectionEpisodes,
-            play => 'ardaudiothek://collection/' . $entry->{id},
             passthrough => [{collectionID => $entry->{id}}]
         };
     }

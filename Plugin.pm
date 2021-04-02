@@ -408,7 +408,6 @@ sub listEpisodes {
             type => 'audio',
             favorites_type => 'audio',
             play => 'ardaudiothek://episode/' . $episode->{id},
-            #play => $episode->{url},
             on_select => 'play',
             image => selectImageFormat($episode->{image}),
             description => $episode->{description},

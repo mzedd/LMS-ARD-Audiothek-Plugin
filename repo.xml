@@ -3,7 +3,7 @@
         <title lang="EN">Repo for ARD Audiothek testing</title>
     </details>
     <plugins>
-        <plugin name="ARDAudiothek" version="0.1.6" maxTarget="*">
+        <plugin name="ARDAudiothek" version="0.1.7" maxTarget="*">
             <title lang="EN">ARD Audiothek Plugin</title>
             <desc lang="EN">Listen to the ARD Audiothek.</desc>
             <url>https://github.com/mzedd/LMS-ARD-Audiothek-Plugin/releases/download/nightly/ARDAudiothek.zip</url>

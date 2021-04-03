@@ -77,29 +77,29 @@ sub homescreen {
                 items => episodelistToOPML($content->{discoverEpisodelist})
             };
 
-            #            push @items, {
-            #                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_OUR_FAVORITES'),
-            #                type => 'link',
-            #                items => listCollections($content->{_embedded}->{"mt:editorialCollections"}->{_embedded}->{"mt:editorialCollections"})
-            #            };
-            #
-            #            push @items, {
-            #                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_TOPICS'),
-            #                type => 'link',
-            #                items => listCollections($content->{_embedded}->{"mt:featuredPlaylists"}->{_embedded}->{"mt:editorialCollections"})
-            #            };
-            #
+            push @items, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_OUR_FAVORITES'),
+                type => 'link',
+                items => collectionlistToOPML($content->{editorialCollections}) 
+            };
+
+            push @items, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_TOPICS'),
+                type => 'link',
+                items => collectionlistToOPML($content->{featuredPlaylists})
+            };
+
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_MOSTPLAYED'),
                 type => 'link',
                 items => episodelistToOPML($content->{mostPlayedEpisodelist})
             };
 
-            #            push @items, {
-            #                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_FEATURED_PROGRAMSETS'),
-            #                type => 'items',
-            #                items => listProgramSet($content->{_embedded}->{"mt:featuredProgramSets"}->{_embedded}->{"mt:programSets"})
-            #            };
+            push @items, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_FEATURED_PROGRAMSETS'),
+                type => 'items',
+                items => programSetToOPML($content->{featuredProgramSets})
+            };
 
             $callback->({ items => \@items});
         }
@@ -413,6 +413,41 @@ sub episodelistToOPML {
     }
 
     return \@items;
+}
+
+sub collectionlistToOPML {
+    my $collectionlist = shift;
+    my @items;
+
+    for my $collection (@{$collectionlist}) {
+        push @items, {
+            name => $collection->{title},
+            type => 'link',
+            image => selectImageFormat($collection->{imageUrl}),
+            url => \&listCollectionEpisodes,
+            passthrough => [{collectionID => $collection->{id}}]
+        };
+    }
+
+    return \@items;
+}
+
+sub programSetToOPML {
+    my $programSetlist = shift;
+    my @items;
+
+    for my $programSet (@{$programSetlist}) {
+        push @items, {
+            name => $programSet->{title},
+            type => 'link',
+            image => selectImageFormat($programSet->{imageUrl}),
+            url => \&programSetDetails,
+            passthrough => [{programSetID => $programSet->{id}}]
+       };
+    }
+
+    return \@items;
+
 }
 
 sub listEpisodes {

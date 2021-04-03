@@ -23,12 +23,18 @@ sub getHomescreen {
     my $adapter = sub {
         my $content = shift;
 
-        my $discoverEpisodelist = _episodelistFromJson($content->{_embedded}->{"mt:stageItems"}->{_embedded}->{"mt:items"});
-        my $mostPlayedEpisodelist = _episodelistFromJson($content->{_embedded}->{"mt:mostPlayed"}->{_embedded}->{"mt:items"});
+        my $discoverEpisodelist   = _itemlistFromJson($content->{_embedded}->{"mt:stageItems"}->{_embedded}->{"mt:items"}, \&_episodeFromJson);
+        my $editorialCollections  = _itemlistFromJson($content->{_embedded}->{"mt:editorialCollections"}->{_embedded}->{"mt:editorialCollections"}, \&_collectionFromJson);
+        my $featuredPlaylists     = _itemlistFromJson($content->{_embedded}->{"mt:featuredPlaylists"}->{_embedded}->{"mt:editorialCollections"}, \&_collectionFromJson);
+        my $mostPlayedEpisodelist = _itemlistFromJson($content->{_embedded}->{"mt:mostPlayed"}->{_embedded}->{"mt:items"}, \&_episodeFromJson);
+        my $featuredProgramSets   = _itemlistFromJson($content->{_embedded}->{"mt:featuredProgramSets"}->{_embedded}->{"mt:programSets"}, \&_programSetFromJson);
 
         my $homescreen = {
             discoverEpisodelist => $discoverEpisodelist,
-            mostPlayedEpisodelist => $mostPlayedEpisodelist
+            editorialCollections => $editorialCollections,
+            featuredPlaylists => $featuredPlaylists,
+            mostPlayedEpisodelist => $mostPlayedEpisodelist,
+            featuredProgramSets => $featuredProgramSets
         };
 
         $callback->($homescreen);
@@ -127,16 +133,40 @@ sub getItemFromCache {
     return undef;
 }
 
-sub _episodelistFromJson {
-    my $jsonEpisodeList = shift;
-    my @episodeList;
+sub _itemlistFromJson {
+    my $jsonItemlist = shift;
+    my $itemFromJson = shift;
+    my @itemlist;
 
-    for my $jsonEpisode (@{$jsonEpisodeList}) {
-
-        push (@episodeList, _episodeFromJson($jsonEpisode)); 
+    for my $jsonItem (@{$jsonItemlist}) {
+        push (@itemlist, $itemFromJson->($jsonItem));
     }
 
-    return \@episodeList;
+    return \@itemlist;
+}
+
+sub _collectionFromJson {
+    my $jsonCollection = shift;
+
+    my $collection = {
+        imageUrl => $jsonCollection->{_links}->{"mt:image"}->{href},
+        title => $jsonCollection->{title},
+        id => $jsonCollection->{id}
+    };
+
+    return $collection;
+}
+
+sub _programSetFromJson {
+    my $jsonProgramSet = shift;
+
+    my $programSet = {
+        imageUrl => $jsonProgramSet->{_links}->{"mt:image"}->{href},
+        title => $jsonProgramSet->{title},
+        id => $jsonProgramSet->{id}
+    };
+
+    return $programSet;
 }
 
 sub _episodeFromJson {

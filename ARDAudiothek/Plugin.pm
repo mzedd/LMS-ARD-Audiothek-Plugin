@@ -31,8 +31,7 @@ sub initPlugin {
         weight  => 10
     );
 
-    Slim::Player::ProtocolHandlers->registerHandler('ardaudiothek', 'Plugins::ARDAudiothek::ProtocolHandler');    
-
+    Slim::Player::ProtocolHandlers->registerHandler('ardaudiothek', 'Plugins::ARDAudiothek::ProtocolHandler');
 }
 
 sub shutdownPlugin {
@@ -133,8 +132,8 @@ sub searchProgramSets {
     Plugins::ARDAudiothek::API->search(
         sub {
             my $content = shift;
-            
-            my $items = listProgramSet($content->{_embedded}->{"mt:programSets"});
+           
+            my $items = programSetToOPML($content->{programSetlist});
             my $numberOfElements = $content->{numberOfElements}; 
            
             $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
@@ -154,7 +153,7 @@ sub searchItems {
         sub {
             my $content = shift;
             
-            my $items = listEpisodes($content->{_embedded}->{"mt:items"});
+            my $items = episodelistToOPML($content->{episodelist});
             my $numberOfElements = $content->{numberOfElements}; 
            
             $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });

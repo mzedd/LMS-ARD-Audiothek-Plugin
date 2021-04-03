@@ -69,7 +69,39 @@ sub search {
 
     my $url = API_URL . "search/$args->{searchType}?query=$args->{searchWord}&offset=$offset&limit=$args->{limit}";
 
-    _call($url, $callback);
+    my $programSetAdapter = sub {
+        my $content = shift;
+        
+        my $programSetSearchresult = {
+            programSetlist => _itemlistFromJson($content->{_embedded}->{"mt:programSets"}, \&_programSetFromJson),
+            numberOfElements => $content->{numberOfElements}
+        };
+            
+        $callback->($programSetSearchresult);
+    };
+
+    my $episodeAdapter = sub {
+        my $content = shift;
+        my $episodeSearchresult = {
+            episodelist => _itemlistFromJson($content->{_embedded}->{"mt:items"}, \&_episodeFromJson),
+            numberOfElements => $content->{numberOfElements}
+        };
+
+        $callback->($episodeSearchresult);
+    };
+
+    my $adapter;
+    if($args->{searchType} eq 'programsets') {
+        $adapter = $programSetAdapter;
+    }
+    elsif($args->{searchType} eq 'items') {
+        $adapter = $episodeAdapter;
+    }
+    else {
+        $callback->(undef);
+    }
+
+    _call($url, $adapter);
 }
 
 sub getProgramSet {

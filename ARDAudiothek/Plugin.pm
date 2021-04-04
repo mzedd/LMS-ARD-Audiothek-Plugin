@@ -180,7 +180,7 @@ sub listEditorialCategories {
                     name => $category->{title},
                     type => 'link',
                     url => \&listEditorialCategoryMenus,
-                    image => selectImageFormat($category->{imageUrl}),
+                    image => Plugins::ARDAudiothek::API::selectImageFormat($category->{imageUrl}),
                     passthrough => [ {editorialCategoryID => $category->{id}} ]
                 }
             }
@@ -235,99 +235,49 @@ sub listOrganizations {
 
     Plugins::ARDAudiothek::API->getOrganizations(
         sub {
-            my $content = shift;
-            my $items;
+            my $organizationlist = shift;
+            my @items;
 
-            for my $entry (@{$content->{_embedded}->{"mt:organizations"}}) { 
-                push @{$items}, {
-                    name => $entry->{name},
+            for my $organization (@{$organizationlist}) { 
+                push @items, {
+                    name => $organization->{name},
                     type => 'link',
-                    items => listPublicationServices($entry->{_embedded}->{"mt:publicationServices"})
+                    items => listPublicationServices($organization->{publicationServices})
                 };
             }
 
-            $callback->({items => $items});
+            $callback->({items => \@items});
         }
     );
 }
 
 sub listPublicationServices {
-    my $jsonPublicationServices = shift;
-    my $items = [];
+    my $publicationServices = shift;
+    my @items;
 
-    if(ref $jsonPublicationServices eq ref {}) {
-        my $imageURL = selectImageFormat($jsonPublicationServices->{_links}->{"mt:image"}->{href});
-
-        push @{$items}, {
-            name => $jsonPublicationServices->{title},
-            type => 'link',
-            image => $imageURL,
-            items => publicationServiceDetails($jsonPublicationServices)
-        }
-    } else {
-        for my $entry (@{$jsonPublicationServices}) {
-            my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
-            
-            push @{$items}, {
-                name => $entry->{title},
-                type => 'link',
-                image => $imageURL,
-                items => publicationServiceDetails($entry)
-            };
-        }
-    }
-
-    return $items;
-}
-
-sub publicationServiceDetails {
-    my $content = shift;
-    my $items = [];
-
-    $items = listProgramSet($content->{_embedded}->{"mt:programSets"});
-
-    if($content->{_embedded}->{"mt:liveStreams"}->{numberOfElements} == 1) {
-       my $imageURL = selectImageFormat($content->{_links}->{"mt:image"}->{href});
-       unshift @{$items}, {
-           name => 'Livestream',
-           type => 'audio',
-           play => $content->{_embedded}->{"mt:liveStreams"}->{_embedded}->{"mt:items"}->{stream}->{streamUrl},
-           image => $imageURL
-       };
-    }
-
-    return $items;
-}
-
-sub listProgramSet {
-    my $jsonProgramSet = shift;
-    my $items = [];
-
-    if(ref $jsonProgramSet eq ref {}) {
-        my $imageURL = selectImageFormat($jsonProgramSet->{_links}->{"mt:image"}->{href});
+    for my $publicationService (@{$publicationServices}) {
+        my @publicationServiceItems = programSetToOPML($publicationService->{programSets});
         
-        push @{$items}, {
-            name  => $jsonProgramSet->{title},
-            type  => 'link',
-            image => $imageURL,
-            url => \&programSetDetails,
-            passthrough => [{programSetID => $jsonProgramSet->{id}}]
-        };
-    } else {
-        for my $entry (@{$jsonProgramSet}) {
-            my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
-            
-            push @{$items}, {
-                name => $entry->{title},
-                type => 'link',
-                image => $imageURL,
-                url => \&programSetDetails,
-                passthrough => [{programSetID => $entry->{id}}]
+        if(defined $publicationService->{liveStream}) {
+            my $liveStream = $publicationService->{liveStream};
+
+            unshift @publicationServiceItems, {
+                name => $liveStream->{name},
+                image => Plugins::ARDAudiothek::API::selectImageFormat($liveStream->{imageUrl}),
+                play => $liveStream->{url}
             };
         }
+
+        push @items, {
+            name => $publicationService->{name},
+            type => 'link',
+            image => Plugins::ARDAudiothek::API::selectImageFormat($publicationService->{imageUrl}),
+            description => $publicationService->{description},
+            items => \@publicationServiceItems
+        };
     }
 
-    return $items;
+    return \@items;
 }
 
 sub programSetDetails {
@@ -335,10 +285,10 @@ sub programSetDetails {
     
     Plugins::ARDAudiothek::API->getProgramSet(
         sub {
-            my $content = shift;
+            my $programSet = shift;
 
-            my $items = listEpisodes($content->{_embedded}->{"mt:items"});
-            my $numberOfElements = $content->{numberOfElements}; 
+            my $items = episodelistToOPML($programSet->{episodelist}); 
+            my $numberOfElements = $programSet->{numberOfElements}; 
            
             $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
         },
@@ -350,34 +300,15 @@ sub programSetDetails {
     );
 }
 
-sub listCollections {
-    my $jsonCollections = shift;
-    my $items = [];
-
-    for my $entry (@{$jsonCollections}) {
-        my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
-        
-        push @{$items}, {
-            name => $entry->{title},
-            type => 'link',
-            image => $imageURL,
-            url => \&listCollectionEpisodes,
-            passthrough => [{collectionID => $entry->{id}}]
-        };
-    }
-
-    return $items;
-}
-
 sub listCollectionEpisodes {
     my ($client, $callback, $args, $params) = @_;
 
     Plugins::ARDAudiothek::API->getCollectionContent(
         sub {
-            my $content = shift;
+            my $collection = shift;
 
-            my $items = listEpisodes($content->{_embedded}->{"mt:items"});
-            my $numberOfElements = $content->{numberOfElements}; 
+            my $items = episodelistToOPML($collection->{episodelist});
+            my $numberOfElements = $collection->{numberOfElements}; 
            
             $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
         },
@@ -400,7 +331,7 @@ sub episodelistToOPML {
             favorites_type => 'audio',
             play => 'ardaudiothek://episode/' . $episode->{id},
             on_select => 'play',
-            image => selectImageFormat($episode->{image}),
+            image => Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl}),
             description => $episode->{description},
             duration => $episode->{duration},
             line1 => $episode->{title},
@@ -419,7 +350,7 @@ sub collectionlistToOPML {
         push @items, {
             name => $collection->{title},
             type => 'link',
-            image => selectImageFormat($collection->{imageUrl}),
+            image => Plugins::ARDAudiothek::API::selectImageFormat($collection->{imageUrl}),
             url => \&listCollectionEpisodes,
             passthrough => [{collectionID => $collection->{id}}]
         };
@@ -436,7 +367,7 @@ sub programSetToOPML {
         push @items, {
             name => $programSet->{title},
             type => 'link',
-            image => selectImageFormat($programSet->{imageUrl}),
+            image => Plugins::ARDAudiothek::API::selectImageFormat($programSet->{imageUrl}),
             url => \&programSetDetails,
             passthrough => [{programSetID => $programSet->{id}}]
        };
@@ -444,56 +375,6 @@ sub programSetToOPML {
 
     return \@items;
 
-}
-
-sub listEpisodes {
-    my $jsonEpisodeList = shift;
-    my @items;
-
-    for my $entry (@{$jsonEpisodeList}) {
-        my $episode = episodeDetails($entry);
-
-        push @items, {
-            name => $episode->{title},
-            type => 'audio',
-            favorites_type => 'audio',
-            play => 'ardaudiothek://episode/' . $episode->{id},
-            on_select => 'play',
-            image => selectImageFormat($episode->{image}),
-            description => $episode->{description},
-            duration => $episode->{duration},
-            line1 => $episode->{title},
-            line2 => $episode->{show}
-        };
-    }
-
-    return \@items;
-}
-
-sub episodeDetails {
-    my $item = shift;
-
-    my %episode = (
-        url => $item->{_links}->{"mt:bestQualityPlaybackUrl"}->{href}, 
-        image => $item->{_links}->{"mt:image"}->{href},
-        duration => $item->{duration},
-        id => $item->{id},
-        description => $item->{synopsis},
-        title => $item->{title},
-        show => $item->{_embedded}->{"mt:programSet"}->{title}
-    );
-
-    return \%episode;
-}
-
-sub selectImageFormat {
-    my $imageURL = shift;
-    my $thumbnailSize = 4.0 * "$serverPrefs->{prefs}->{thumbSize}";
-
-    $imageURL =~ s/{ratio}/1x1/i;
-    $imageURL =~ s/{width}/$thumbnailSize/i;
-
-    return $imageURL;
 }
 
 1;

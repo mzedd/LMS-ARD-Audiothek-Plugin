@@ -7,6 +7,7 @@ use Digest::MD5 qw(md5_hex);
 
 use Slim::Utils::Log;
 use Slim::Utils::Cache;
+use Slim::Utils::Prefs;
 
 use constant API_URL => 'https://api.ardaudiothek.de/';
 use constant TIMEOUT_IN_S => 20;
@@ -14,6 +15,7 @@ use constant CACHE_TTL_IN_S => 24 * 3600;
 
 my $log = logger('plugin.ardaudiothek');
 my $cache = Slim::Utils::Cache->new();
+my $serverPrefs = preferences('server');
 
 sub getHomescreen {
     my ($class, $callback, $args) = @_;
@@ -170,7 +172,21 @@ sub getProgramSet {
 
     my $url = API_URL . "programsets/$args->{programSetID}?order=desc&offset=$offset&limit=$args->{limit}";
 
-    _call($url, $callback);
+    my $adapter = sub {
+        my $jsonProgramSet = shift;
+
+        my $programSet = {
+            title => $jsonProgramSet->{title},
+            id => $jsonProgramSet->{id},
+            numberOfElements => $jsonProgramSet->{numberOfElements},
+            description => $jsonProgramSet->{synopsis},
+            episodelist => _itemlistFromJson($jsonProgramSet->{_embedded}->{"mt:items"}, \&_episodeFromJson)
+        };
+
+        $callback->($programSet);
+    };
+
+    _call($url, $adapter);
 }
 
 sub getCollectionContent {
@@ -183,16 +199,39 @@ sub getCollectionContent {
 
     my $url = API_URL . "editorialcollections/$args->{collectionID}?offset=$offset&limit=$args->{limit}";
 
-    _call($url, $callback);
+    my $adapter = sub {
+        my $jsonCollection = shift;
+
+        my $collection = {
+            title => $jsonCollection->{title},
+            id => $jsonCollection->{id},
+            numberOfElements => $jsonCollection->{numberOfElements},
+            description => $jsonCollection->{synopsis},
+            episodelist => _itemlistFromJson($jsonCollection->{_embedded}->{"mt:items"}, \&_episodeFromJson)
+        };
+
+        $callback->($collection);
+    };
+
+    _call($url, $adapter);
 }
 
 sub getOrganizations {
     my ($class, $callback, $args) = @_;
-
     my $url = API_URL . 'organizations';
 
-    _call($url, $callback);
+    my $adapter = sub {
+        my $content = shift;
 
+        my $organizationlist = _itemlistFromJson(
+            $content->{_embedded}->{"mt:organizations"},
+            \&_organizationFromJson
+        );
+
+        $callback->($organizationlist);
+    };
+
+    _call($url, $adapter);
 }
 
 sub getItem {
@@ -200,7 +239,13 @@ sub getItem {
 
     my $url = API_URL . 'items/' . $args->{id};
 
-    _call($url, $callback);
+    my $adapter = sub {
+        my $content = shift;
+        
+        $callback->(_episodeFromJson($content));
+    };
+
+    _call($url, $adapter);
 }
 
 sub clearCache {
@@ -215,7 +260,7 @@ sub getItemFromCache {
 
     if($cacheKey && (my $cached = $cache->get($cacheKey))) {
         $log->info("Using cached data for url: $url");
-        return $cached;
+        return _episodeFromJson($cached);
     }
 
     return undef;
@@ -226,8 +271,13 @@ sub _itemlistFromJson {
     my $itemFromJson = shift;
     my @itemlist;
 
-    for my $jsonItem (@{$jsonItemlist}) {
-        push (@itemlist, $itemFromJson->($jsonItem));
+    if(ref $jsonItemlist eq ref {}) {
+        push (@itemlist, $itemFromJson->($jsonItemlist));
+    }
+    else {
+        for my $jsonItem (@{$jsonItemlist}) {
+            push (@itemlist, $itemFromJson->($jsonItem));
+        }
     }
 
     return \@itemlist;
@@ -243,6 +293,47 @@ sub _categoryFromJson {
     };
 
     return $category;
+}
+
+sub _organizationFromJson {
+    my $jsonOrganization = shift;
+
+    my $organization = {
+        name => $jsonOrganization->{name},
+        id => $jsonOrganization->{id},
+        publicationServices => _itemlistFromJson(
+            $jsonOrganization->{_embedded}->{"mt:publicationServices"},
+            \&_publicationServiceFromJson
+        )
+    };
+
+    return $organization;
+}
+
+sub _publicationServiceFromJson {
+    my $jsonPublicationService = shift;
+
+    my $publicationService = {
+        name => $jsonPublicationService->{organizationName},
+        id => $jsonPublicationService->{id},
+        imageUrl => $jsonPublicationService->{_links}->{"mt:image"}->{href},
+        description => $jsonPublicationService->{synopsis},
+        programSets => _itemlistFromJson(
+            $jsonPublicationService->{_embedded}->{"mt:programSets"},
+            \&_programSetFromJson
+        )
+    };
+
+    # if there is a liveStream - add it
+    if($jsonPublicationService->{_embedded}->{"mt:liveStreams"}->{numberOfElements} == 1) {
+        $publicationService->{liveStream} = {
+            name => 'Livestream',
+            imageUrl => $publicationService->{_links}->{"mt:image"}->{href},
+            url => $publicationService->{_embedded}->{"mt:liveStreams"}->{_embedded}->{"mt:items"}->{stream}->{streamUrl}
+        };
+    }
+
+    return $publicationService;
 }
 
 sub _collectionFromJson {
@@ -274,7 +365,7 @@ sub _episodeFromJson {
     
     my $episode = {
         url => $jsonEpisode->{_links}->{"mt:bestQualityPlaybackUrl"}->{href}, 
-        image => $jsonEpisode->{_links}->{"mt:image"}->{href},
+        imageUrl => $jsonEpisode->{_links}->{"mt:image"}->{href},
         duration => $jsonEpisode->{duration},
         id => $jsonEpisode->{id},
         description => $jsonEpisode->{synopsis},
@@ -283,6 +374,16 @@ sub _episodeFromJson {
     };
 
     return $episode;
+}
+
+sub selectImageFormat {
+    my $imageURL = shift;
+    my $thumbnailSize = 4.0 * "$serverPrefs->{prefs}->{thumbSize}";
+
+    $imageURL =~ s/{ratio}/1x1/i;
+    $imageURL =~ s/{width}/$thumbnailSize/i;
+
+    return $imageURL;
 }
 
 # low level api call

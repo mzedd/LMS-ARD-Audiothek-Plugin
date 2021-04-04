@@ -7,26 +7,22 @@ use strict;
 use base qw(Slim::Player::Protocols::HTTPS);
 
 use Slim::Utils::Log;
-use Plugins::ARDAudiothek::Plugin;
 use Plugins::ARDAudiothek::API;
 
 my $log = logger('plugin.ardaudiothek');
 
 sub scanUrl {
     my ($class, $uri, $args) = @_;
-
-    $log->info($uri);
-
     my $id = _itemIdFromUri($uri);
 
     Plugins::ARDAudiothek::API->getItem(sub{
-            my $episode = Plugins::ARDAudiothek::Plugin::episodeDetails(shift);
+            my $episode = shift;
             my $url = $episode->{url};
 
             Slim::Utils::Scanner::Remote->scanURL($url, $args);
 
             my $client = $args->{client}->master;
-            my $image = Plugins::ARDAudiothek::Plugin::selectImageFormat($episode->{image});
+            my $image = Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl});
 
             $client->playingSong->pluginData( wmaMeta => {
                     icon   => $image,
@@ -48,10 +44,9 @@ sub scanUrl {
 sub getMetadataFor {
     my ($class, $client, $uri) = @_;
 
-    my $content = Plugins::ARDAudiothek::API::getItemFromCache(_itemIdFromUri($uri)); 
-    my $episode = Plugins::ARDAudiothek::Plugin::episodeDetails($content);
+    my $episode = Plugins::ARDAudiothek::API::getItemFromCache(_itemIdFromUri($uri)); 
 
-    my $image = Plugins::ARDAudiothek::Plugin::selectImageFormat($episode->{image});
+    my $image = Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl});
 
     return {
         icon => $image,

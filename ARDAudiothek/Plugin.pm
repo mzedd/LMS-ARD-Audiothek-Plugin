@@ -172,23 +172,20 @@ sub listEditorialCategories {
 
     Plugins::ARDAudiothek::API->getEditorialCategories(
         sub {
-            my $content = shift;
-
-            my $items = [];
+            my $categorylist = shift;
+            my @items;
             
-            for my $entry (@{$content->{_embedded}->{"mt:editorialCategories"}}) {
-                my $imageURL = selectImageFormat($entry->{_links}->{"mt:image"}->{href});
-
-                push @{$items}, {
-                    name => $entry->{title},
+            for my $category (@{$categorylist}) {
+                push @items, {
+                    name => $category->{title},
                     type => 'link',
                     url => \&listEditorialCategoryMenus,
-                    image => $imageURL,
-                    passthrough => [ {editorialCategoryID => $entry->{id}} ]
+                    image => selectImageFormat($category->{imageUrl}),
+                    passthrough => [ {editorialCategoryID => $category->{id}} ]
                 }
             }
 
-            $callback->({items => $items});
+            $callback->({items => \@items});
         }
     );
 }
@@ -204,25 +201,25 @@ sub listEditorialCategoryMenus {
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_MOSTPLAYED'),
                 type => 'link',
-                items => listEpisodes($content->{_embedded}->{"mt:mostPlayed"})
+                items => episodelistToOPML($content->{mostPlayedEpisodelist})
             };
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_NEWEST'),
                 type => 'link',
-                items => listEpisodes($content->{_embedded}->{"mt:items"})
+                items => episodelistToOPML($content->{newestEpisodelist})
             };
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_FEATURED_PROGRAMSETS'),
                 type => 'link',
-                items => listProgramSet($content->{_embedded}->{"mt:featuredProgramSets"})
+                items => programSetToOPML($content->{featuredProgramSets})
             };
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_ALL_PROGRAMSETS'),
                 type => 'link',
-                items => listProgramSet($content->{_embedded}->{"mt:programSets"})
+                items => programSetToOPML($content->{programSets})
             };
 
             $callback->({items => \@items});

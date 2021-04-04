@@ -23,11 +23,28 @@ sub getHomescreen {
     my $adapter = sub {
         my $content = shift;
 
-        my $discoverEpisodelist   = _itemlistFromJson($content->{_embedded}->{"mt:stageItems"}->{_embedded}->{"mt:items"}, \&_episodeFromJson);
-        my $editorialCollections  = _itemlistFromJson($content->{_embedded}->{"mt:editorialCollections"}->{_embedded}->{"mt:editorialCollections"}, \&_collectionFromJson);
-        my $featuredPlaylists     = _itemlistFromJson($content->{_embedded}->{"mt:featuredPlaylists"}->{_embedded}->{"mt:editorialCollections"}, \&_collectionFromJson);
-        my $mostPlayedEpisodelist = _itemlistFromJson($content->{_embedded}->{"mt:mostPlayed"}->{_embedded}->{"mt:items"}, \&_episodeFromJson);
-        my $featuredProgramSets   = _itemlistFromJson($content->{_embedded}->{"mt:featuredProgramSets"}->{_embedded}->{"mt:programSets"}, \&_programSetFromJson);
+        my $discoverEpisodelist = _itemlistFromJson(
+            $content->{_embedded}->{"mt:stageItems"}->{_embedded}->{"mt:items"},
+            \&_episodeFromJson
+        );
+        
+        my $editorialCollections = _itemlistFromJson(
+            $content->{_embedded}->{"mt:editorialCollections"}->{_embedded}->{"mt:editorialCollections"},
+            \&_collectionFromJson
+        );
+
+        my $featuredPlaylists = _itemlistFromJson(
+            $content->{_embedded}->{"mt:featuredPlaylists"}->{_embedded}->{"mt:editorialCollections"},
+            \&_collectionFromJson);
+        my $mostPlayedEpisodelist = _itemlistFromJson(
+            $content->{_embedded}->{"mt:mostPlayed"}->{_embedded}->{"mt:items"},
+            \&_episodeFromJson
+        );
+
+        my $featuredProgramSets = _itemlistFromJson(
+            $content->{_embedded}->{"mt:featuredProgramSets"}->{_embedded}->{"mt:programSets"},
+            \&_programSetFromJson
+        );
 
         my $homescreen = {
             discoverEpisodelist => $discoverEpisodelist,
@@ -45,18 +62,57 @@ sub getHomescreen {
 
 sub getEditorialCategories {
     my ($class, $callback, $args) = @_;
-
     my $url = API_URL . 'editorialcategories';
 
-    _call($url, $callback);
+    my $adapter = sub {
+        my $content = shift;
+
+        my $categorylist = _itemlistFromJson($content->{_embedded}->{"mt:editorialCategories"}, \&_categoryFromJson);
+        
+        $callback->($categorylist);
+    };
+
+    _call($url, $adapter);
 }
 
 sub getEditorialCategoryPlaylists {
     my ($class, $callback, $args) = @_;
-
     my $url = API_URL . 'editorialcategories/' . $args->{editorialCategoryID};
 
-    _call($url, $callback);
+    my $adapter = sub {
+        my $content = shift;
+
+        my $mostPlayedEpisodelist = _itemlistFromJson(
+            $content->{_embedded}->{"mt:mostPlayed"},
+            \&_episodeFromJson
+        );
+
+        my $newestEpisodelist = _itemlistFromJson(
+            $content->{_embedded}->{"mt:items"},
+            \&_episodeFromJson
+        );
+
+        my $featuredProgramSets = _itemlistFromJson(
+            $content->{_embedded}->{"mt:featuredProgramSets"},
+            \&_programSetFromJson
+        );
+
+        my $programSets = _itemlistFromJson(
+            $content->{_embedded}->{"mt:programSets"},
+            \&_programSetFromJson
+        );
+
+        my $categoryItems = {
+            mostPlayedEpisodelist => $mostPlayedEpisodelist,
+            newestEpisodelist => $newestEpisodelist,
+            featuredProgramSets => $featuredProgramSets,
+            programSets => $programSets
+        };
+
+        $callback->($categoryItems);
+    };
+
+    _call($url, $adapter);
 }
 
 sub search {
@@ -175,6 +231,18 @@ sub _itemlistFromJson {
     }
 
     return \@itemlist;
+}
+
+sub _categoryFromJson {
+    my $jsonCategory = shift;
+
+    my $category = {
+        imageUrl => $jsonCategory->{_links}->{"mt:image"}->{href},
+        title => $jsonCategory->{title},
+        id => $jsonCategory->{id}
+    };
+
+    return $category;
 }
 
 sub _collectionFromJson {

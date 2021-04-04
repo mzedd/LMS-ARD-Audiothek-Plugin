@@ -96,8 +96,8 @@ sub homescreen {
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_FEATURED_PROGRAMSETS'),
-                type => 'items',
-                items => programSetToOPML($content->{featuredProgramSets})
+                type => 'link',
+                items => programSetlistToOPML($content->{featuredProgramSets})
             };
 
             $callback->({ items => \@items});
@@ -133,7 +133,7 @@ sub searchProgramSets {
         sub {
             my $content = shift;
            
-            my $items = programSetToOPML($content->{programSetlist});
+            my $items = programSetlistToOPML($content->{programSetlist});
             my $numberOfElements = $content->{numberOfElements}; 
            
             $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
@@ -213,13 +213,13 @@ sub listEditorialCategoryMenus {
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_FEATURED_PROGRAMSETS'),
                 type => 'link',
-                items => programSetToOPML($content->{featuredProgramSets})
+                items => programSetlistToOPML($content->{featuredProgramSets})
             };
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_ALL_PROGRAMSETS'),
                 type => 'link',
-                items => programSetToOPML($content->{programSets})
+                items => programSetlistToOPML($content->{programSets})
             };
 
             $callback->({items => \@items});
@@ -256,13 +256,15 @@ sub listPublicationServices {
     my @items;
 
     for my $publicationService (@{$publicationServices}) {
-        my @publicationServiceItems = programSetToOPML($publicationService->{programSets});
-        
+        my $publicationServiceItems = programSetlistToOPML($publicationService->{programSets});
+       
+        # add radio station if there is one
         if(defined $publicationService->{liveStream}) {
             my $liveStream = $publicationService->{liveStream};
 
-            unshift @publicationServiceItems, {
+            unshift @{$publicationServiceItems}, {
                 name => $liveStream->{name},
+                type => 'audio',
                 image => Plugins::ARDAudiothek::API::selectImageFormat($liveStream->{imageUrl}),
                 play => $liveStream->{url}
             };
@@ -272,8 +274,7 @@ sub listPublicationServices {
             name => $publicationService->{name},
             type => 'link',
             image => Plugins::ARDAudiothek::API::selectImageFormat($publicationService->{imageUrl}),
-            description => $publicationService->{description},
-            items => \@publicationServiceItems
+            items => $publicationServiceItems
         };
     }
 
@@ -359,7 +360,7 @@ sub collectionlistToOPML {
     return \@items;
 }
 
-sub programSetToOPML {
+sub programSetlistToOPML {
     my $programSetlist = shift;
     my @items;
 
@@ -374,7 +375,6 @@ sub programSetToOPML {
     }
 
     return \@items;
-
 }
 
 1;

@@ -314,7 +314,7 @@ sub _publicationServiceFromJson {
     my $jsonPublicationService = shift;
 
     my $publicationService = {
-        name => $jsonPublicationService->{organizationName},
+        name => $jsonPublicationService->{title},
         id => $jsonPublicationService->{id},
         imageUrl => $jsonPublicationService->{_links}->{"mt:image"}->{href},
         description => $jsonPublicationService->{synopsis},
@@ -328,8 +328,8 @@ sub _publicationServiceFromJson {
     if($jsonPublicationService->{_embedded}->{"mt:liveStreams"}->{numberOfElements} == 1) {
         $publicationService->{liveStream} = {
             name => 'Livestream',
-            imageUrl => $publicationService->{_links}->{"mt:image"}->{href},
-            url => $publicationService->{_embedded}->{"mt:liveStreams"}->{_embedded}->{"mt:items"}->{stream}->{streamUrl}
+            imageUrl => $jsonPublicationService->{_links}->{"mt:image"}->{href},
+            url => $jsonPublicationService->{_embedded}->{"mt:liveStreams"}->{_embedded}->{"mt:items"}->{stream}->{streamUrl}
         };
     }
 

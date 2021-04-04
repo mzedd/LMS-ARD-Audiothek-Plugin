@@ -306,7 +306,7 @@ sub programSetEpisodes {
         sub {
             my $programSet = shift;
 
-            my $items = episodesToOPML($programSet->{episodelist}); 
+            my $items = episodesToOPML($programSet->{episodes}); 
             my $numberOfElements = $programSet->{numberOfElements}; 
            
             $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
@@ -344,7 +344,7 @@ sub collectionEpisodes {
         sub {
             my $collection = shift;
 
-            my $items = episodesToOPML($collection->{episodelist});
+            my $items = episodesToOPML($collection->{episodes});
             my $numberOfElements = $collection->{numberOfElements}; 
            
             $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });

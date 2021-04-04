@@ -45,7 +45,6 @@ sub getMetadataFor {
     my ($class, $client, $uri) = @_;
 
     my $episode = Plugins::ARDAudiothek::API::getEpisodeFromCache(_itemIdFromUri($uri)); 
-
     my $image = Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl});
 
     return {

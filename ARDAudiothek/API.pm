@@ -192,7 +192,7 @@ sub getPlaylist {
             id => $jsonPlaylist->{id},
             numberOfElements => $jsonPlaylist->{numberOfElements},
             description => $jsonPlaylist->{synopsis},
-            episodelist => _itemlistFromJson($jsonPlaylist->{_embedded}->{"mt:items"}, \&_episodeFromJson)
+            episodes => _itemlistFromJson($jsonPlaylist->{_embedded}->{"mt:items"}, \&_episodeFromJson)
         };
 
         $callback->($playlist);
@@ -350,13 +350,13 @@ sub _episodeFromJson {
 }
 
 sub selectImageFormat {
-    my $imageURL = shift;
+    my $imageUrl = shift;
     my $thumbnailSize = 4.0 * "$serverPrefs->{prefs}->{thumbSize}";
 
-    $imageURL =~ s/{ratio}/1x1/i;
-    $imageURL =~ s/{width}/$thumbnailSize/i;
+    $imageUrl =~ s/{ratio}/1x1/i;
+    $imageUrl =~ s/{width}/$thumbnailSize/i;
 
-    return $imageURL;
+    return $imageUrl;
 }
 
 # low level api call

@@ -25,34 +25,35 @@ sub getHomescreen {
     my $adapter = sub {
         my $content = shift;
 
-        my $discoverEpisodelist = _itemlistFromJson(
+        my $discoverEpisodes = _itemlistFromJson(
             $content->{_embedded}->{"mt:stageItems"}->{_embedded}->{"mt:items"},
             \&_episodeFromJson
         );
         
         my $editorialCollections = _itemlistFromJson(
             $content->{_embedded}->{"mt:editorialCollections"}->{_embedded}->{"mt:editorialCollections"},
-            \&_collectionFromJson
+            \&_playlistFromJson
         );
 
         my $featuredPlaylists = _itemlistFromJson(
             $content->{_embedded}->{"mt:featuredPlaylists"}->{_embedded}->{"mt:editorialCollections"},
-            \&_collectionFromJson);
-        my $mostPlayedEpisodelist = _itemlistFromJson(
+            \&_playlistFromJson);
+
+        my $mostPlayedEpisodes = _itemlistFromJson(
             $content->{_embedded}->{"mt:mostPlayed"}->{_embedded}->{"mt:items"},
             \&_episodeFromJson
         );
 
         my $featuredProgramSets = _itemlistFromJson(
             $content->{_embedded}->{"mt:featuredProgramSets"}->{_embedded}->{"mt:programSets"},
-            \&_programSetFromJson
+            \&_playlistFromJson
         );
 
         my $homescreen = {
-            discoverEpisodelist => $discoverEpisodelist,
+            discoverEpisodes => $discoverEpisodes,
             editorialCollections => $editorialCollections,
             featuredPlaylists => $featuredPlaylists,
-            mostPlayedEpisodelist => $mostPlayedEpisodelist,
+            mostPlayedEpisodes => $mostPlayedEpisodes,
             featuredProgramSets => $featuredProgramSets
         };
 
@@ -84,34 +85,34 @@ sub getEditorialCategoryPlaylists {
     my $adapter = sub {
         my $content = shift;
 
-        my $mostPlayedEpisodelist = _itemlistFromJson(
+        my $mostPlayedEpisodes = _itemlistFromJson(
             $content->{_embedded}->{"mt:mostPlayed"},
             \&_episodeFromJson
         );
 
-        my $newestEpisodelist = _itemlistFromJson(
+        my $newestEpisodes = _itemlistFromJson(
             $content->{_embedded}->{"mt:items"},
             \&_episodeFromJson
         );
 
         my $featuredProgramSets = _itemlistFromJson(
             $content->{_embedded}->{"mt:featuredProgramSets"},
-            \&_programSetFromJson
+            \&_playlistFromJson
         );
 
         my $programSets = _itemlistFromJson(
             $content->{_embedded}->{"mt:programSets"},
-            \&_programSetFromJson
+            \&_playlistFromJson
         );
 
-        my $categoryItems = {
-            mostPlayedEpisodelist => $mostPlayedEpisodelist,
-            newestEpisodelist => $newestEpisodelist,
+        my $editorialCategoryPlaylists = {
+            mostPlayedEpisodes => $mostPlayedEpisodes,
+            newestEpisodes => $newestEpisodes,
             featuredProgramSets => $featuredProgramSets,
             programSets => $programSets
         };
 
-        $callback->($categoryItems);
+        $callback->($editorialCategoryPlaylists);
     };
 
     _call($url, $adapter);
@@ -127,33 +128,33 @@ sub search {
 
     my $url = API_URL . "search/$args->{searchType}?query=$args->{searchWord}&offset=$offset&limit=$args->{limit}";
 
-    my $programSetAdapter = sub {
+    my $programSetsAdapter = sub {
         my $content = shift;
         
-        my $programSetSearchresult = {
-            programSetlist => _itemlistFromJson($content->{_embedded}->{"mt:programSets"}, \&_programSetFromJson),
+        my $programSetsSearchresult = {
+            programSets => _itemlistFromJson($content->{_embedded}->{"mt:programSets"}, \&_playlistFromJson),
             numberOfElements => $content->{numberOfElements}
         };
             
-        $callback->($programSetSearchresult);
+        $callback->($programSetsSearchresult);
     };
 
-    my $episodeAdapter = sub {
+    my $episodesAdapter = sub {
         my $content = shift;
-        my $episodeSearchresult = {
-            episodelist => _itemlistFromJson($content->{_embedded}->{"mt:items"}, \&_episodeFromJson),
+        my $episodesSearchresult = {
+            episodes => _itemlistFromJson($content->{_embedded}->{"mt:items"}, \&_episodeFromJson),
             numberOfElements => $content->{numberOfElements}
         };
 
-        $callback->($episodeSearchresult);
+        $callback->($episodesSearchresult);
     };
 
     my $adapter;
     if($args->{searchType} eq 'programsets') {
-        $adapter = $programSetAdapter;
+        $adapter = $programSetsAdapter;
     }
     elsif($args->{searchType} eq 'items') {
-        $adapter = $episodeAdapter;
+        $adapter = $episodesAdapter;
     }
     else {
         $callback->(undef);
@@ -162,55 +163,39 @@ sub search {
     _call($url, $adapter);
 }
 
-sub getProgramSet {
+sub getPlaylist {
     my ($class, $callback, $args) = @_;
+
+    my $url = API_URL;
+    if($args->{type} eq 'programSet') {
+        $url = $url . "programsets/$args->{id}?order=desc&";
+    }
+    elsif($args->{type} eq 'collection') {
+        $url = $url . "editorialcollections/$args->{id}?";
+    }
+    else {
+        $callback->(undef);
+    }
 
     my $offset = 0;
     if(defined $args->{offset}) {
         $offset = $args->{offset};
     }
 
-    my $url = API_URL . "programsets/$args->{programSetID}?order=desc&offset=$offset&limit=$args->{limit}";
+    $url = $url . "offset=$offset&limit=$args->{limit}";
 
     my $adapter = sub {
-        my $jsonProgramSet = shift;
+        my $jsonPlaylist = shift;
 
-        my $programSet = {
-            title => $jsonProgramSet->{title},
-            id => $jsonProgramSet->{id},
-            numberOfElements => $jsonProgramSet->{numberOfElements},
-            description => $jsonProgramSet->{synopsis},
-            episodelist => _itemlistFromJson($jsonProgramSet->{_embedded}->{"mt:items"}, \&_episodeFromJson)
+        my $playlist = {
+            title => $jsonPlaylist->{title},
+            id => $jsonPlaylist->{id},
+            numberOfElements => $jsonPlaylist->{numberOfElements},
+            description => $jsonPlaylist->{synopsis},
+            episodelist => _itemlistFromJson($jsonPlaylist->{_embedded}->{"mt:items"}, \&_episodeFromJson)
         };
 
-        $callback->($programSet);
-    };
-
-    _call($url, $adapter);
-}
-
-sub getCollectionContent {
-    my ($class, $callback, $args) = @_;
-
-    my $offset = 0;
-    if(defined $args->{offset}) {
-        $offset = $args->{offset};
-    }
-
-    my $url = API_URL . "editorialcollections/$args->{collectionID}?offset=$offset&limit=$args->{limit}";
-
-    my $adapter = sub {
-        my $jsonCollection = shift;
-
-        my $collection = {
-            title => $jsonCollection->{title},
-            id => $jsonCollection->{id},
-            numberOfElements => $jsonCollection->{numberOfElements},
-            description => $jsonCollection->{synopsis},
-            episodelist => _itemlistFromJson($jsonCollection->{_embedded}->{"mt:items"}, \&_episodeFromJson)
-        };
-
-        $callback->($collection);
+        $callback->($playlist);
     };
 
     _call($url, $adapter);
@@ -234,15 +219,15 @@ sub getOrganizations {
     _call($url, $adapter);
 }
 
-sub getItem {
+sub getEpisode {
     my ($class, $callback, $args) = @_;
 
     my $url = API_URL . 'items/' . $args->{id};
 
     my $adapter = sub {
-        my $content = shift;
+        my $jsonEpisode = shift;
         
-        $callback->(_episodeFromJson($content));
+        $callback->(_episodeFromJson($jsonEpisode));
     };
 
     _call($url, $adapter);
@@ -252,7 +237,7 @@ sub clearCache {
     $cache->cleanup();
 }
 
-sub getItemFromCache {
+sub getEpisodeFromCache {
     my $id = shift;
 
     my $url = API_URL . 'items/' . $id;
@@ -320,7 +305,7 @@ sub _publicationServiceFromJson {
         description => $jsonPublicationService->{synopsis},
         programSets => _itemlistFromJson(
             $jsonPublicationService->{_embedded}->{"mt:programSets"},
-            \&_programSetFromJson
+            \&_playlistFromJson
         )
     };
 
@@ -336,28 +321,16 @@ sub _publicationServiceFromJson {
     return $publicationService;
 }
 
-sub _collectionFromJson {
-    my $jsonCollection = shift;
+sub _playlistFromJson {
+    my $jsonPlaylist = shift;
 
-    my $collection = {
-        imageUrl => $jsonCollection->{_links}->{"mt:image"}->{href},
-        title => $jsonCollection->{title},
-        id => $jsonCollection->{id}
+    my $playlist = {
+        imageUrl => $jsonPlaylist->{_links}->{"mt:image"}->{href},
+        title => $jsonPlaylist->{title},
+        id => $jsonPlaylist->{id}
     };
 
-    return $collection;
-}
-
-sub _programSetFromJson {
-    my $jsonProgramSet = shift;
-
-    my $programSet = {
-        imageUrl => $jsonProgramSet->{_links}->{"mt:image"}->{href},
-        title => $jsonProgramSet->{title},
-        id => $jsonProgramSet->{id}
-    };
-
-    return $programSet;
+    return $playlist;
 }
 
 sub _episodeFromJson {

@@ -61,43 +61,43 @@ sub homescreen {
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES'),
                 type => 'link',
-                url => \&listEditorialCategories
+                url => \&editorialCategories
             };
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_ORGANIZATIONS'),
                 type => 'link',
-                url => \&listOrganizations
+                url => \&organizations
             };
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_DISCOVER'),
                 type => 'link',
-                items => episodelistToOPML($content->{discoverEpisodelist})
+                items => episodesToOPML($content->{discoverEpisodes})
             };
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_OUR_FAVORITES'),
                 type => 'link',
-                items => collectionlistToOPML($content->{editorialCollections}) 
+                items => collectionsToOPML($content->{editorialCollections}) 
             };
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_TOPICS'),
                 type => 'link',
-                items => collectionlistToOPML($content->{featuredPlaylists})
+                items => collectionsToOPML($content->{featuredPlaylists})
             };
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_MOSTPLAYED'),
                 type => 'link',
-                items => episodelistToOPML($content->{mostPlayedEpisodelist})
+                items => episodesToOPML($content->{mostPlayedEpisodes})
             };
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_FEATURED_PROGRAMSETS'),
                 type => 'link',
-                items => programSetlistToOPML($content->{featuredProgramSets})
+                items => programSetsToOPML($content->{featuredProgramSets})
             };
 
             $callback->({ items => \@items});
@@ -119,7 +119,7 @@ sub search {
     push @items, {
         name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_ITEMS'),
         type => 'link',
-        url => \&searchItems,
+        url => \&searchEpisodes,
         passthrough => [{ search => $args->{search} }]
     };
 
@@ -131,30 +131,31 @@ sub searchProgramSets {
 
     Plugins::ARDAudiothek::API->search(
         sub {
-            my $content = shift;
+            my $programSetsSearchresult = shift;
            
-            my $items = programSetlistToOPML($content->{programSetlist});
-            my $numberOfElements = $content->{numberOfElements}; 
+            my $items = programSetsToOPML($programSetsSearchresult->{programSets});
+            my $numberOfElements = $programSetsSearchresult->{numberOfElements}; 
            
             $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
         },
         {
             searchType  => 'programsets',
             searchWord  => $params->{search},
+            offset      => $args->{index},
             limit       => $serverPrefs->{prefs}->{itemsPerPage}
         }
     );
 }
 
-sub searchItems {
+sub searchEpisodes {
     my ($client, $callback, $args, $params) = @_;
 
     Plugins::ARDAudiothek::API->search(
         sub {
-            my $content = shift;
+            my $episodesSearchresult = shift;
             
-            my $items = episodelistToOPML($content->{episodelist});
-            my $numberOfElements = $content->{numberOfElements}; 
+            my $items = episodesToOPML($episodesSearchresult->{episodes});
+            my $numberOfElements = $episodesSearchresult->{numberOfElements}; 
            
             $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
         },
@@ -167,7 +168,7 @@ sub searchItems {
     );
 }
 
-sub listEditorialCategories {
+sub editorialCategories {
     my ($client, $callback, $args) = @_;
 
     Plugins::ARDAudiothek::API->getEditorialCategories(
@@ -179,9 +180,9 @@ sub listEditorialCategories {
                 push @items, {
                     name => $category->{title},
                     type => 'link',
-                    url => \&listEditorialCategoryMenus,
+                    url => \&editorialCategoryPlaylists,
                     image => Plugins::ARDAudiothek::API::selectImageFormat($category->{imageUrl}),
-                    passthrough => [ {editorialCategoryID => $category->{id}} ]
+                    passthrough => [ {id => $category->{id}} ]
                 }
             }
 
@@ -190,47 +191,47 @@ sub listEditorialCategories {
     );
 }
 
-sub listEditorialCategoryMenus {
+sub editorialCategoryPlaylists {
     my ($client, $callback, $args, $params) = @_;
     my @items;
 
     Plugins::ARDAudiothek::API->getEditorialCategoryPlaylists(
         sub {
-            my $content = shift;
+            my $editorialCategoryPlaylists = shift;
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_MOSTPLAYED'),
                 type => 'link',
-                items => episodelistToOPML($content->{mostPlayedEpisodelist})
+                items => episodesToOPML($editorialCategoryPlaylists->{mostPlayedEpisodes})
             };
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_NEWEST'),
                 type => 'link',
-                items => episodelistToOPML($content->{newestEpisodelist})
+                items => episodesToOPML($editorialCategoryPlaylists->{newestEpisodes})
             };
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_FEATURED_PROGRAMSETS'),
                 type => 'link',
-                items => programSetlistToOPML($content->{featuredProgramSets})
+                items => programSetsToOPML($editorialCategoryPlaylists->{featuredProgramSets})
             };
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_ALL_PROGRAMSETS'),
                 type => 'link',
-                items => programSetlistToOPML($content->{programSets})
+                items => programSetsToOPML($editorialCategoryPlaylists->{programSets})
             };
 
             $callback->({items => \@items});
         },
         {
-            editorialCategoryID => $params->{editorialCategoryID}
+            id => $params->{id}
         }
     );
 }
 
-sub listOrganizations {
+sub organizations {
     my ($client, $callback, $args) = @_;
 
     Plugins::ARDAudiothek::API->getOrganizations(
@@ -242,7 +243,7 @@ sub listOrganizations {
                 push @items, {
                     name => $organization->{name},
                     type => 'link',
-                    items => listPublicationServices($organization->{publicationServices})
+                    items => publicationServices($organization->{publicationServices})
                 };
             }
 
@@ -251,12 +252,12 @@ sub listOrganizations {
     );
 }
 
-sub listPublicationServices {
+sub publicationServices {
     my $publicationServices = shift;
     my @items;
 
     for my $publicationService (@{$publicationServices}) {
-        my $publicationServiceItems = programSetlistToOPML($publicationService->{programSets});
+        my $publicationServiceItems = programSetsToOPML($publicationService->{programSets});
        
         # add radio station if there is one
         if(defined $publicationService->{liveStream}) {
@@ -281,47 +282,83 @@ sub listPublicationServices {
     return \@items;
 }
 
-sub programSetDetails {
+sub programSetsToOPML {
+    my $programSetlist = shift;
+    my @items;
+
+    for my $programSet (@{$programSetlist}) {
+        push @items, {
+            name => $programSet->{title},
+            type => 'link',
+            image => Plugins::ARDAudiothek::API::selectImageFormat($programSet->{imageUrl}),
+            url => \&programSetEpisodes,
+            passthrough => [{id => $programSet->{id}}]
+       };
+    }
+
+    return \@items;
+}
+
+sub programSetEpisodes {
     my ($client, $callback, $args, $params) = @_;
     
-    Plugins::ARDAudiothek::API->getProgramSet(
+    Plugins::ARDAudiothek::API->getPlaylist(
         sub {
             my $programSet = shift;
 
-            my $items = episodelistToOPML($programSet->{episodelist}); 
+            my $items = episodesToOPML($programSet->{episodelist}); 
             my $numberOfElements = $programSet->{numberOfElements}; 
            
             $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
         },
         {
-            programSetID => $params->{programSetID},
-            offset      => $args->{index},
-            limit       => $serverPrefs->{prefs}->{itemsPerPage}
+            type => 'programSet',
+            id => $params->{id},
+            offset => $args->{index},
+            limit => $serverPrefs->{prefs}->{itemsPerPage}
         }
     );
 }
 
-sub listCollectionEpisodes {
+sub collectionsToOPML {
+    my $collectionlist = shift;
+    my @items;
+
+    for my $collection (@{$collectionlist}) {
+        push @items, {
+            name => $collection->{title},
+            type => 'link',
+            image => Plugins::ARDAudiothek::API::selectImageFormat($collection->{imageUrl}),
+            url => \&collectionEpisodes,
+            passthrough => [{id => $collection->{id}}]
+        };
+    }
+
+    return \@items;
+}
+
+sub collectionEpisodes {
     my ($client, $callback, $args, $params) = @_;
 
-    Plugins::ARDAudiothek::API->getCollectionContent(
+    Plugins::ARDAudiothek::API->getPlaylist(
         sub {
             my $collection = shift;
 
-            my $items = episodelistToOPML($collection->{episodelist});
+            my $items = episodesToOPML($collection->{episodelist});
             my $numberOfElements = $collection->{numberOfElements}; 
            
             $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
         },
         {
-            collectionID => $params->{collectionID},
-            offset      => $args->{index},
-            limit       => $serverPrefs->{prefs}->{itemsPerPage}
+            type => 'collection',
+            id => $params->{id},
+            offset => $args->{index},
+            limit => $serverPrefs->{prefs}->{itemsPerPage}
         }
     );
 }
 
-sub episodelistToOPML {
+sub episodesToOPML {
     my $episodelist = shift;
     my @items;
 
@@ -338,40 +375,6 @@ sub episodelistToOPML {
             line1 => $episode->{title},
             line2 => $episode->{show}
         };
-    }
-
-    return \@items;
-}
-
-sub collectionlistToOPML {
-    my $collectionlist = shift;
-    my @items;
-
-    for my $collection (@{$collectionlist}) {
-        push @items, {
-            name => $collection->{title},
-            type => 'link',
-            image => Plugins::ARDAudiothek::API::selectImageFormat($collection->{imageUrl}),
-            url => \&listCollectionEpisodes,
-            passthrough => [{collectionID => $collection->{id}}]
-        };
-    }
-
-    return \@items;
-}
-
-sub programSetlistToOPML {
-    my $programSetlist = shift;
-    my @items;
-
-    for my $programSet (@{$programSetlist}) {
-        push @items, {
-            name => $programSet->{title},
-            type => 'link',
-            image => Plugins::ARDAudiothek::API::selectImageFormat($programSet->{imageUrl}),
-            url => \&programSetDetails,
-            passthrough => [{programSetID => $programSet->{id}}]
-       };
     }
 
     return \@items;

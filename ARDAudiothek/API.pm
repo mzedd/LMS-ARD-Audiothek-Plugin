@@ -80,7 +80,7 @@ sub getEditorialCategories {
 
 sub getEditorialCategoryPlaylists {
     my ($class, $callback, $args) = @_;
-    my $url = API_URL . 'editorialcategories/' . $args->{editorialCategoryID};
+    my $url = API_URL . 'editorialcategories/' . $args->{id};
 
     my $adapter = sub {
         my $content = shift;

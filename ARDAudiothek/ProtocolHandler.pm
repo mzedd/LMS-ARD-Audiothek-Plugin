@@ -44,7 +44,12 @@ sub scanUrl {
 sub getMetadataFor {
     my ($class, $client, $uri) = @_;
 
-    my $episode = Plugins::ARDAudiothek::API::getEpisodeFromCache(_itemIdFromUri($uri)); 
+    my $episode = Plugins::ARDAudiothek::API->getEpisode(sub {}, {id => _itemIdFromUri($uri)});
+
+    if(not defined $episode) {
+        return undef;
+    }
+
     my $image = Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl});
 
     return {

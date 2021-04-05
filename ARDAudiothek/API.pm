@@ -230,25 +230,12 @@ sub getEpisode {
         $callback->(_episodeFromJson($jsonEpisode));
     };
 
-    _call($url, $adapter);
+    my $cached = _call($url, $adapter);
+    return _episodeFromJson($cached);
 }
 
 sub clearCache {
     $cache->cleanup();
-}
-
-sub getEpisodeFromCache {
-    my $id = shift;
-
-    my $url = API_URL . 'items/' . $id;
-    my $cacheKey = md5_hex($url);
-
-    if($cacheKey && (my $cached = $cache->get($cacheKey))) {
-        $log->info("Using cached data for url: $url");
-        return _episodeFromJson($cached);
-    }
-
-    return undef;
 }
 
 sub _itemlistFromJson {
@@ -371,7 +358,7 @@ sub _call {
     if($cacheKey && (my $cached = $cache->get($cacheKey))) {
         $log->info("Using cached data for url: $url");
         $callback->($cached);
-        return;
+        return $cached;
     }
 
     Slim::Networking::SimpleAsyncHTTP->new(
@@ -389,6 +376,8 @@ sub _call {
         },
         { timeout => TIMEOUT_IN_S }
     )->get($url);
+
+    return undef;
 }
 
 1;

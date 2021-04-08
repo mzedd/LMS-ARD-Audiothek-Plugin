@@ -1,0 +1,14 @@
+<extensions>
+    <details>
+        <title lang="EN">3rd-party repository for installing the ARD Audiothek plugin</title>
+    </details>
+    <plugins>
+        <plugin name="ARDAudiothek" version="1.0.0" maxTarget="*">
+            <title lang="EN">ARD Audiothek Plugin</title>
+            <desc lang="EN">Browse and listen to content of the ARD Audiothek.</desc>
+            <url>https://github.com/mzedd/LMS-ARD-Audiothek-Plugin/releases/download/nightly/ARDAudiothek.zip</url>
+            <creator>Max Zimmermann</creator>
+            <sha>checksum</sha>
+        </plugin>
+    </plugins>
+</extensions>

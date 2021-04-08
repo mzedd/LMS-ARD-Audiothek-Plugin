@@ -1,0 +1,53 @@
+name: Create nightly release
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  create-nightly:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete nightly release
+        uses: dev-drprasad/delete-tag-and-release@v0.2.0
+        with:
+          delete_release: true
+          tag_name: nightly
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: nightly
+          release_name: Nightly build
+          draft: false
+          prerelease: true
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - run: zip -r ARDAudiothek.zip ARDAudiothek
+      - name: Upload ZIP file
+        id: upload-zip-file
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ARDAudiothek.zip
+          asset_name: ARDAudiothek.zip
+          asset_content_type: application/zip
+      - name: Generate checksum
+        run: sed -i "/checksum/{s/checksum/$(sha1sum ARDAudiothek.zip | awk '{print $1}')/}" repo.xml
+      - name: Upload repo file
+        id: upload-repo-file
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./repo.xml
+          asset_name: repo.xml
+          asset_content_type: repofile/xml

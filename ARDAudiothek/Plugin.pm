@@ -289,9 +289,10 @@ sub programSetsToOPML {
     for my $programSet (@{$programSetlist}) {
         push @items, {
             name => $programSet->{title},
-            type => 'link',
+            type => 'playlist',
             image => Plugins::ARDAudiothek::API::selectImageFormat($programSet->{imageUrl}),
             url => \&programSetEpisodes,
+            favorites_url => 'ardaudiothek://programset/' . $programSet->{id},
             passthrough => [{id => $programSet->{id}}]
        };
     }

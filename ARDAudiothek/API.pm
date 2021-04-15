@@ -1,5 +1,21 @@
 package Plugins::ARDAudiothek::API;
 
+# ARD Audiothek Plugin for the Logitech Media Server (LMS)
+# Copyright (C) 2021  Max Zimmermann  software@maxzimmermann.xyz
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 use strict;
 
 use JSON::XS::VersionOneAndTwo;
@@ -11,7 +27,7 @@ use Slim::Utils::Prefs;
 
 use constant API_URL => 'https://api.ardaudiothek.de/';
 use constant TIMEOUT_IN_S => 20;
-use constant CACHE_TTL_IN_S => 24 * 3600;
+use constant CACHE_TTL_IN_S => 1 * 3600; # cache one hour
 
 my $log = logger('plugin.ardaudiothek');
 my $cache = Slim::Utils::Cache->new();
@@ -167,7 +183,7 @@ sub getPlaylist {
     my ($class, $callback, $args) = @_;
 
     my $url = API_URL;
-    if($args->{type} eq 'programSet') {
+    if($args->{type} eq 'programset') {
         $url = $url . "programsets/$args->{id}?order=desc&";
     }
     elsif($args->{type} eq 'collection') {

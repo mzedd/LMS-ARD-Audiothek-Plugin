@@ -1,5 +1,21 @@
 package Plugins::ARDAudiothek::Plugin;
 
+# ARD Audiothek Plugin for the Logitech Media Server (LMS)
+# Copyright (C) 2021  Max Zimmermann  software@maxzimmermann.xyz
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 use strict;
 use base qw(Slim::Plugin::OPMLBased);
 use Slim::Utils::Log;
@@ -289,9 +305,10 @@ sub programSetsToOPML {
     for my $programSet (@{$programSetlist}) {
         push @items, {
             name => $programSet->{title},
-            type => 'link',
+            type => 'playlist',
             image => Plugins::ARDAudiothek::API::selectImageFormat($programSet->{imageUrl}),
             url => \&programSetEpisodes,
+            favorites_url => 'ardaudiothek://programset/' . $programSet->{id},
             passthrough => [{id => $programSet->{id}}]
        };
     }
@@ -312,7 +329,7 @@ sub programSetEpisodes {
             $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
         },
         {
-            type => 'programSet',
+            type => 'programset',
             id => $params->{id},
             offset => $args->{index},
             limit => $serverPrefs->{prefs}->{itemsPerPage}
@@ -327,9 +344,10 @@ sub collectionsToOPML {
     for my $collection (@{$collectionlist}) {
         push @items, {
             name => $collection->{title},
-            type => 'link',
+            type => 'playlist',
             image => Plugins::ARDAudiothek::API::selectImageFormat($collection->{imageUrl}),
             url => \&collectionEpisodes,
+            favorites_url => 'ardaudiothek://collection/' . $collection->{id},
             passthrough => [{id => $collection->{id}}]
         };
     }

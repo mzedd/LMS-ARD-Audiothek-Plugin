@@ -1,6 +1,6 @@
 package Plugins::ARDAudiothek::API;
 
-# ARD Audiothek Plugin for Logitech Media Server (LMS)
+# ARD Audiothek Plugin for the Logitech Media Server (LMS)
 # Copyright (C) 2021  Max Zimmermann  software@maxzimmermann.xyz
 # 
 # This program is free software: you can redistribute it and/or modify

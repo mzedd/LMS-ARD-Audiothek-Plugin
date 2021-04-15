@@ -167,7 +167,7 @@ sub getPlaylist {
     my ($class, $callback, $args) = @_;
 
     my $url = API_URL;
-    if($args->{type} eq 'programSet') {
+    if($args->{type} eq 'programset') {
         $url = $url . "programsets/$args->{id}?order=desc&";
     }
     elsif($args->{type} eq 'collection') {

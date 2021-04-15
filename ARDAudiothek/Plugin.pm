@@ -313,7 +313,7 @@ sub programSetEpisodes {
             $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
         },
         {
-            type => 'programSet',
+            type => 'programset',
             id => $params->{id},
             offset => $args->{index},
             limit => $serverPrefs->{prefs}->{itemsPerPage}
@@ -328,9 +328,10 @@ sub collectionsToOPML {
     for my $collection (@{$collectionlist}) {
         push @items, {
             name => $collection->{title},
-            type => 'link',
+            type => 'playlist',
             image => Plugins::ARDAudiothek::API::selectImageFormat($collection->{imageUrl}),
             url => \&collectionEpisodes,
+            favorites_url => 'ardaudiothek://collection/' . $collection->{id},
             passthrough => [{id => $collection->{id}}]
         };
     }

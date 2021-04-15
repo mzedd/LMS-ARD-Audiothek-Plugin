@@ -50,8 +50,9 @@ sub explodePlaylist {
     if($uri =~ /ardaudiothek:\/\/episode\/[0-9]+/) {
         $callback->([$uri]);
     }
-    elsif($uri =~ /ardaudiothek:\/\/programset\/[0-9]+/) {
+    elsif($uri =~ /ardaudiothek:\/\/(programset|collection)\/[0-9]+/) {
         my $id = _itemIdFromUri($uri);
+        my $playlistType = _typeFromUri($uri);
 
         Plugins::ARDAudiothek::API->getPlaylist(
             sub {
@@ -64,8 +65,8 @@ sub explodePlaylist {
 
                 $callback->([@episodeUris]);
             },{
-                type => 'programSet',
                 id => $id,
+                type => $playlistType,
                 offset => 0,
                 limit => PLAYLIST_EPISODE_LIMIT
             }
@@ -104,6 +105,15 @@ sub _itemIdFromUri {
     $id =~ s/\D//g;
     
     return $id;
+}
+
+sub _typeFromUri {
+    my $uri = shift;
+
+    my $type = $uri;
+    $type =~ s/(ardaudiothek:\/\/)|(\/[0-9]+)//g;
+
+    return $type;
 }
 
 1;

@@ -11,7 +11,7 @@ use Slim::Utils::Prefs;
 
 use constant API_URL => 'https://api.ardaudiothek.de/';
 use constant TIMEOUT_IN_S => 20;
-use constant CACHE_TTL_IN_S => 24 * 3600;
+use constant CACHE_TTL_IN_S => 1 * 3600; # cache one hour
 
 my $log = logger('plugin.ardaudiothek');
 my $cache = Slim::Utils::Cache->new();

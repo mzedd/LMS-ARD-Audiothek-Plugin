@@ -3,11 +3,14 @@
         <title lang="EN">3rd-party repository for installing the ARD Audiothek plugin</title>
     </details>
     <plugins>
-        <plugin name="ARDAudiothek" version="1.0.0" maxTarget="*">
-            <title lang="EN">ARD Audiothek Plugin</title>
+        <plugin name="ARDAudiothek" version="1.1.0" maxTarget="*">
+            <title lang="EN">ARD Audiothek</title>
             <desc lang="EN">Browse and listen to content of the ARD Audiothek.</desc>
+            <changes lang="EN">v1.1.0: Added GPLv3 license. Playlists can now be added as favorites. Reduced cache TTL to one hour.</changes>
             <url>https://github.com/mzedd/LMS-ARD-Audiothek-Plugin/releases/download/nightly/ARDAudiothek.zip</url>
+            <link>https://github.com/mzedd/LMS-ARD-Audiothek-Plugin/</link>
             <creator>Max Zimmermann</creator>
+            <email>software@maxzimmermann.xyz</email>
             <sha>checksum</sha>
         </plugin>
     </plugins>

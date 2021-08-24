@@ -186,37 +186,48 @@ sub search {
 sub getPlaylist {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_URL;
+    my $url = API_URL . 'graphql/';
+    my $adapter;
+
     if($args->{type} eq 'programset') {
-        $url = $url . "programsets/$args->{id}?order=desc&";
+        $url = $url . "programsets/$args->{id}";
+        
+        $adapter = sub {
+            my $jsonPlaylist = shift;
+            $jsonPlaylist = $jsonPlaylist->{data}->{programSet};
+
+            my $playlist = {
+                title => $jsonPlaylist->{title},
+                id => $jsonPlaylist->{id},
+                numberOfElements => $jsonPlaylist->{numberOfElements},
+                description => $jsonPlaylist->{synopsis},
+                episodes => _itemlistFromJson($jsonPlaylist->{items}->{nodes}, \&_episodeFromJson)
+            };
+
+            $callback->($playlist);
+        };
     }
     elsif($args->{type} eq 'collection') {
-        $url = $url . "editorialcollections/$args->{id}?";
+        $url = $url . "editorialcollections/$args->{id}";
+
+        $adapter = sub {
+            my $jsonPlaylist = shift;
+            $jsonPlaylist = $jsonPlaylist->{data}->{root};
+
+            my $playlist = {
+                title => $jsonPlaylist->{title},
+                id => $jsonPlaylist->{id},
+                numberOfElements => $jsonPlaylist->{numberOfElements},
+                description => $jsonPlaylist->{synopsis},
+                episodes => _itemlistFromJson($jsonPlaylist->{items}->{nodes}, \&_episodeFromJson)
+            };
+
+            $callback->($playlist);
+        };
     }
     else {
         $callback->(undef);
     }
-
-    my $offset = 0;
-    if(defined $args->{offset}) {
-        $offset = $args->{offset};
-    }
-
-    $url = $url . "offset=$offset&limit=$args->{limit}";
-
-    my $adapter = sub {
-        my $jsonPlaylist = shift;
-
-        my $playlist = {
-            title => $jsonPlaylist->{title},
-            id => $jsonPlaylist->{id},
-            numberOfElements => $jsonPlaylist->{numberOfElements},
-            description => $jsonPlaylist->{synopsis},
-            episodes => _itemlistFromJson($jsonPlaylist->{_embedded}->{"mt:items"}, \&_episodeFromJson)
-        };
-
-        $callback->($playlist);
-    };
 
     _call($url, $adapter);
 }

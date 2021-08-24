@@ -96,6 +96,11 @@ sub explodePlaylist {
 sub getMetadataFor {
     my ($class, $client, $uri) = @_;
 
+    # skip everthing what does not the custom uri
+    if($uri !~ m/ardaudiothek:\/\/episode\/[0-9]+/) {
+        return undef;
+    }
+
     my $episode = Plugins::ARDAudiothek::API->getEpisode(sub {}, {id => _itemIdFromUri($uri)});
 
     if(not defined $episode) {

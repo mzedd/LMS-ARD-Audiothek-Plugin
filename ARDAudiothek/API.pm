@@ -27,7 +27,7 @@ use Slim::Utils::Prefs;
 
 use Plugins::ARDAudiothek::GraphQLQueries;
 
-use constant API_URL => 'https://api.ardaudiothek.de/graphql?query=';
+use constant API_URL => 'https://api.ardaudiothek.de/';
 use constant TIMEOUT_IN_S => 20;
 use constant CACHE_TTL_IN_S => 1 * 3600; # cache one hour
 
@@ -277,7 +277,7 @@ sub _categoryFromJson {
     my $jsonCategory = shift;
 
     my $category = {
-        imageUrl => $jsonCategory->{_links}->{"mt:image"}->{href},
+        imageUrl => $jsonCategory->{image}->{url},
         title => $jsonCategory->{title},
         id => $jsonCategory->{id}
     };

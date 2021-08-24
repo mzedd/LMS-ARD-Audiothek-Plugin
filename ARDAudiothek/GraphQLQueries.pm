@@ -19,7 +19,8 @@ package Plugins::ARDAudiothek::GraphQLQueries;
 use strict;
 
 use constant {
-    EDITORIAL_CATEGORIES => '{editorialCategories {nodes {id title image {url}}}}'
+    HOMESCREEN => 'web/v1/home',
+    EDITORIAL_CATEGORIES => 'graphql?query={editorialCategories {nodes {id title image {url}}}}'
 };
 
 1;

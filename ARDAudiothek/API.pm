@@ -99,28 +99,29 @@ sub getEditorialCategories {
 
 sub getEditorialCategoryPlaylists {
     my ($class, $callback, $args) = @_;
-    my $url = API_URL . 'editorialcategories/' . $args->{id};
+    my $url = API_URL . 'graphql/editorialcategoriesbyid/' . $args->{id};
 
     my $adapter = sub {
         my $content = shift;
+        $content = $content->{data}->{rootEdCatById};
 
         my $mostPlayedEpisodes = _itemlistFromJson(
-            $content->{_embedded}->{"mt:mostPlayed"},
+            $content->{sections}[1]->{items},
             \&_episodeFromJson
         );
 
         my $newestEpisodes = _itemlistFromJson(
-            $content->{_embedded}->{"mt:items"},
+            $content->{sections}[2]->{items},
             \&_episodeFromJson
         );
 
         my $featuredProgramSets = _itemlistFromJson(
-            $content->{_embedded}->{"mt:featuredProgramSets"},
+            $content->{sections}[3]->{programSets},
             \&_playlistFromJson
         );
 
         my $programSets = _itemlistFromJson(
-            $content->{_embedded}->{"mt:programSets"},
+            $content->{sections}[4]->{programSets},
             \&_playlistFromJson
         );
 

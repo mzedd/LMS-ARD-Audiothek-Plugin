@@ -38,32 +38,33 @@ my $serverPrefs = preferences('server');
 sub getHomescreen {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_URL . 'homescreen';
+    my $url = API_URL . Plugins::ARDAudiothek::GraphQLQueries::HOMESCREEN;
 
     my $adapter = sub {
         my $content = shift;
+        $content = $content->{data}->{root};
 
         my $discoverEpisodes = _itemlistFromJson(
-            $content->{_embedded}->{"mt:stageItems"}->{_embedded}->{"mt:items"},
+            $content->{sections}[0]->{items},
             \&_episodeFromJson
         );
         
         my $editorialCollections = _itemlistFromJson(
-            $content->{_embedded}->{"mt:editorialCollections"}->{_embedded}->{"mt:editorialCollections"},
+            $content->{sections}[1]->{editorialCollections},
             \&_playlistFromJson
         );
 
         my $featuredPlaylists = _itemlistFromJson(
-            $content->{_embedded}->{"mt:featuredPlaylists"}->{_embedded}->{"mt:editorialCollections"},
+            $content->{sections}[2]->{editorialCollections},
             \&_playlistFromJson);
 
         my $mostPlayedEpisodes = _itemlistFromJson(
-            $content->{_embedded}->{"mt:mostPlayed"}->{_embedded}->{"mt:items"},
+            $content->{sections}[3]->{items},
             \&_episodeFromJson
         );
 
         my $featuredProgramSets = _itemlistFromJson(
-            $content->{_embedded}->{"mt:featuredProgramSets"}->{_embedded}->{"mt:programSets"},
+            $content->{sections}[4]->{programSets},
             \&_playlistFromJson
         );
 
@@ -240,16 +241,16 @@ sub getOrganizations {
 sub getEpisode {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_URL . 'items/' . $args->{id};
+    my $url = API_URL . 'graphql/items/' . $args->{id};
 
     my $adapter = sub {
         my $jsonEpisode = shift;
-        
-        $callback->(_episodeFromJson($jsonEpisode));
+
+        $callback->(_episodeFromJson($jsonEpisode->{data}->{item}));
     };
 
     my $cached = _call($url, $adapter);
-    return _episodeFromJson($cached);
+    return _episodeFromJson($cached->{data}->{item});
 }
 
 sub clearCache {
@@ -340,7 +341,7 @@ sub _playlistFromJson {
 
 sub _episodeFromJson {
     my $jsonEpisode = shift;
-    
+
     my $episode = {
         url => $jsonEpisode->{_links}->{"mt:bestQualityPlaybackUrl"}->{href}, 
         imageUrl => $jsonEpisode->{_links}->{"mt:image"}->{href},
@@ -348,7 +349,7 @@ sub _episodeFromJson {
         id => $jsonEpisode->{id},
         description => $jsonEpisode->{synopsis},
         title => $jsonEpisode->{title},
-        show => $jsonEpisode->{_embedded}->{"mt:programSet"}->{title}
+        show => $jsonEpisode->{programSet}->{title}
     };
 
     return $episode;

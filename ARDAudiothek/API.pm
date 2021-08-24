@@ -25,7 +25,9 @@ use Slim::Utils::Log;
 use Slim::Utils::Cache;
 use Slim::Utils::Prefs;
 
-use constant API_URL => 'https://api.ardaudiothek.de/';
+use Plugins::ARDAudiothek::GraphQLQueries;
+
+use constant API_URL => 'https://api.ardaudiothek.de/graphql?query=';
 use constant TIMEOUT_IN_S => 20;
 use constant CACHE_TTL_IN_S => 1 * 3600; # cache one hour
 
@@ -81,12 +83,12 @@ sub getHomescreen {
 
 sub getEditorialCategories {
     my ($class, $callback, $args) = @_;
-    my $url = API_URL . 'editorialcategories';
+    my $url = API_URL . Plugins::ARDAudiothek::GraphQLQueries::EDITORIAL_CATEGORIES;
 
     my $adapter = sub {
         my $content = shift;
 
-        my $categorylist = _itemlistFromJson($content->{_embedded}->{"mt:editorialCategories"}, \&_categoryFromJson);
+        my $categorylist = _itemlistFromJson($content->{data}->{editorialCategories}->{nodes}, \&_categoryFromJson);
         
         $callback->($categorylist);
     };

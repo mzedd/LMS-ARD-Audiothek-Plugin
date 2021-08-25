@@ -234,13 +234,13 @@ sub getPlaylist {
 
 sub getOrganizations {
     my ($class, $callback, $args) = @_;
-    my $url = API_URL . 'organizations';
+    my $url = API_URL . 'graphql/organizations';
 
     my $adapter = sub {
         my $content = shift;
 
         my $organizationlist = _itemlistFromJson(
-            $content->{_embedded}->{"mt:organizations"},
+            $content->{data}->{rootOrg}->{nodes},
             \&_organizationFromJson
         );
 
@@ -305,7 +305,7 @@ sub _organizationFromJson {
         name => $jsonOrganization->{name},
         id => $jsonOrganization->{id},
         publicationServices => _itemlistFromJson(
-            $jsonOrganization->{_embedded}->{"mt:publicationServices"},
+            $jsonOrganization->{publicationServices}->{nodes},
             \&_publicationServiceFromJson
         )
     };
@@ -322,7 +322,7 @@ sub _publicationServiceFromJson {
         imageUrl => $jsonPublicationService->{_links}->{"mt:image"}->{href},
         description => $jsonPublicationService->{synopsis},
         programSets => _itemlistFromJson(
-            $jsonPublicationService->{_embedded}->{"mt:programSets"},
+            $jsonPublicationService->{programSets}->{nodes},
             \&_playlistFromJson
         )
     };

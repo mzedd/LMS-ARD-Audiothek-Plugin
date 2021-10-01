@@ -20,7 +20,8 @@ use strict;
 
 use constant {
     HOMESCREEN => 'graphql/homescreen/0',
-    EDITORIAL_CATEGORIES => 'graphql?query={editorialCategories {nodes {id title image {url}}}}'
+    EDITORIAL_CATEGORIES => 'graphql?query={editorialCategories {nodes {id title image {url}}}}',
+    PROGRAM_SET => 'graphql?query={programSet(id: {id}) {items(first: {count}, offset: {offset}) {nodes {id title image {url} summary}} title synopsis id}}'
 };
 
 1;

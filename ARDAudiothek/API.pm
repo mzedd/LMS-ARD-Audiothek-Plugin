@@ -232,6 +232,23 @@ sub getPlaylist {
     _call($url, $adapter);
 }
 
+sub getProgramSet {
+    my ($class, $callback, $args) = @_;
+
+    my $url = API_URL . Plugins::ARDAudiothek::GraphQLQueries::PROGRAM_SET;
+    $url =~ s/{id}/$args->{id}/i;
+    $url =~ s/{count}/$args->{count}/i;
+    $url =~ s/{offset}/$args->{offset}/i;
+
+    my $adapter = sub {
+        my $jsonProgramSet = shift;
+        my $programSet = _programSetFromJson($jsonProgramSet->{data}->{programSet};
+        $callback->($programSet);
+    }
+
+    _call($url, $adapter);
+}
+
 sub getOrganizations {
     my ($class, $callback, $args) = @_;
     my $url = API_URL . 'graphql/organizations';
@@ -349,6 +366,18 @@ sub _playlistFromJson {
     };
 
     return $playlist;
+}
+
+sub _programSetFromJson {
+    my $jsonProgramSet = shift;
+
+    my $programSet = {
+        title => $jsonProgramSet->{title},
+        id => $jsonProgramSet->{id},
+        description => $jsonProgramSet->{summary},
+        imageUrl => $jsonProgramSet->{image}->{url},
+        episodes => _itemlistFromJson($jsonProgramSet->{items}->{nodes}, \&_episodeFromJson)
+    };
 }
 
 sub _episodeFromJson {

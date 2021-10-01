@@ -163,9 +163,9 @@ sub discover {
             my @items;
 
             push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_STAGING'),
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_STAGE'),
                 type => 'link',
-                items => episodesToOPML($content->{stagingEpisodes})
+                items => episodesToOPML($content->{stageEpisodes})
             };
 
             push @items, {

@@ -42,9 +42,9 @@ sub getDiscover {
 
     my $adapter = sub {
         my $content = shift;
-        $content = $content->{data}->{root};
+        $content = $content->{data}->{homescreen};
 
-        my $discoverEpisodes = _itemlistFromJson(
+        my $stageEpisodes = _itemlistFromJson(
             $content->{sections}[0]->{items},
             \&_episodeFromJson
         );
@@ -68,15 +68,15 @@ sub getDiscover {
             \&_playlistFromJson
         );
 
-        my $homescreen = {
-            discoverEpisodes => $discoverEpisodes,
+        my $discover = {
+            stageEpisodes => $stageEpisodes,
             editorialCollections => $editorialCollections,
             featuredPlaylists => $featuredPlaylists,
             mostPlayedEpisodes => $mostPlayedEpisodes,
             featuredProgramSets => $featuredProgramSets
         };
 
-        $callback->($homescreen);
+        $callback->($discover);
     };
 
     _call($url, $adapter);

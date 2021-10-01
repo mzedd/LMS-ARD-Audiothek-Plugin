@@ -55,7 +55,7 @@ sub shutdownPlugin {
 }
 
 sub homescreen {
-    my ($client, $callback, $args) = @_;
+    my ($client, $callback) = @_;
 
     if(not defined $client) {
         $callback->([{ name => string('PLUGIN_ARDAUDIOTHEK_NO_PLAYER')}]);
@@ -64,61 +64,31 @@ sub homescreen {
 
     my @items;
 
-    Plugins::ARDAudiothek::API->getHomescreen(
-        sub {
-            my $content = shift;
+    push @items, {
+        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_SEARCH'),
+        type => 'search',
+        url => \&search
+    };
 
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_SEARCH'),
-                type => 'search',
-                url => \&search
-            };
+    push @items, {
+        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_DISCOVER'),
+        type => 'link',
+        url => \&discover
+    };
 
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES'),
-                type => 'link',
-                url => \&editorialCategories
-            };
+    push @items, {
+        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_ORGANIZATIONS'),
+        type => 'link',
+        url => \&organizations
+    };
+    
+    push @items, {
+        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES'),
+        type => 'link',
+        url => \&editorialCategories
+    };
 
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_ORGANIZATIONS'),
-                type => 'link',
-                url => \&organizations
-            };
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_DISCOVER'),
-                type => 'link',
-                items => episodesToOPML($content->{discoverEpisodes})
-            };
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_OUR_FAVORITES'),
-                type => 'link',
-                items => collectionsToOPML($content->{editorialCollections}) 
-            };
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_TOPICS'),
-                type => 'link',
-                items => collectionsToOPML($content->{featuredPlaylists})
-            };
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_MOSTPLAYED'),
-                type => 'link',
-                items => episodesToOPML($content->{mostPlayedEpisodes})
-            };
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_FEATURED_PROGRAMSETS'),
-                type => 'link',
-                items => programSetsToOPML($content->{featuredProgramSets})
-            };
-
-            $callback->({ items => \@items});
-        }
-    );
+    $callback->({ items => \@items});
 }
 
 sub search {
@@ -180,6 +150,49 @@ sub searchEpisodes {
             searchWord  => $params->{search},
             offset      => $args->{index},
             limit       => $serverPrefs->{prefs}->{itemsPerPage}
+        }
+    );
+}
+
+sub discover {
+    my ($client, $callback) = @_;
+
+    Plugins::ARDAudiothek::API->getDiscover(
+        sub {
+            my $content = shift;
+            my @items;
+
+            push @items, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_STAGING'),
+                type => 'link',
+                items => episodesToOPML($content->{stagingEpisodes})
+            };
+
+            push @items, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_OUR_FAVORITES'),
+                type => 'link',
+                items => collectionsToOPML($content->{editorialCollections}) 
+            };
+
+            push @items, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_TOPICS'),
+                type => 'link',
+                items => collectionsToOPML($content->{featuredPlaylists})
+            };
+
+            push @items, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_MOSTPLAYED'),
+                type => 'link',
+                items => episodesToOPML($content->{mostPlayedEpisodes})
+            };
+
+            push @items, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_FEATURED_PROGRAMSETS'),
+                type => 'link',
+                items => programSetsToOPML($content->{featuredProgramSets})
+            };
+
+            $callback->({items => \@items});
         }
     );
 }

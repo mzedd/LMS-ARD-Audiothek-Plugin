@@ -26,6 +26,10 @@ PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES
 	EN	Categories
 	DE	Rubriken
 
+PLUGIN_ARDAUDIOTHEK_STAGING
+	EN	Staging episodes
+	DE	Ausgewählte Episoden
+
 PLUGIN_ARDAUDIOTHEK_MOSTPLAYED
 	EN	Most played episodes
 	DE	Meistgehörte Episoden

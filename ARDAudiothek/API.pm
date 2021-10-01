@@ -35,7 +35,7 @@ my $log = logger('plugin.ardaudiothek');
 my $cache = Slim::Utils::Cache->new();
 my $serverPrefs = preferences('server');
 
-sub getHomescreen {
+sub getDiscover {
     my ($class, $callback, $args) = @_;
 
     my $url = API_URL . Plugins::ARDAudiothek::GraphQLQueries::HOMESCREEN;
@@ -242,9 +242,9 @@ sub getProgramSet {
 
     my $adapter = sub {
         my $jsonProgramSet = shift;
-        my $programSet = _programSetFromJson($jsonProgramSet->{data}->{programSet};
+        my $programSet = _programSetFromJson($jsonProgramSet->{data}->{programSet});
         $callback->($programSet);
-    }
+    };
 
     _call($url, $adapter);
 }

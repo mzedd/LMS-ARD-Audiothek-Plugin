@@ -257,7 +257,7 @@ sub getOrganizations {
         my $content = shift;
 
         my $organizationlist = _itemlistFromJson(
-            $content->{data}->{rootOrg}->{nodes},
+            $content->{data}->{organizations}->{nodes},
             \&_organizationFromJson
         );
 
@@ -345,11 +345,18 @@ sub _publicationServiceFromJson {
     };
 
     # if there is a liveStream - add it
-    if($jsonPublicationService->{_embedded}->{"mt:liveStreams"}->{numberOfElements} == 1) {
+    if($jsonPublicationService->{liveStreams}->{numberOfElements} >= 1) {
+        my @liveStreamUrls;
+
+        for my $liveStream (@{$jsonPublicationService->{liveStreams}->{items}}) {
+            push (@liveStreamUrls, $liveStream->{stream}->{streamUrl});
+        }
+
+        $log->error(Data::Dump::dump(@liveStreamUrls));
+
         $publicationService->{liveStream} = {
             name => 'Livestream',
-            imageUrl => $jsonPublicationService->{_links}->{"mt:image"}->{href},
-            url => $jsonPublicationService->{_embedded}->{"mt:liveStreams"}->{_embedded}->{"mt:items"}->{stream}->{streamUrl}
+            url => \@liveStreamUrls
         };
     }
 

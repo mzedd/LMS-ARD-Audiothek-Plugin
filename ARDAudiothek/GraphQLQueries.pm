@@ -109,6 +109,7 @@ use constant {
       programSet(id: $id) {
         id
         title
+        numberOfElements
         items {
           nodes {
             audios {
@@ -120,6 +121,7 @@ use constant {
             id
             synopsis
             title
+            duration
           }
         }
       }

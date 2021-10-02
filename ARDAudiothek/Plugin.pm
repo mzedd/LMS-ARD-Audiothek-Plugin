@@ -340,8 +340,10 @@ sub programSetEpisodes {
 
             my $items = episodesToOPML($programSet->{episodes}); 
             my $numberOfElements = $programSet->{numberOfElements}; 
-           
-            $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
+ 
+            $log->error(Data::Dump::dump($items));
+
+            $callback->({ items => $items, total => $numberOfElements });
         },
         {
             id => $params->{id},

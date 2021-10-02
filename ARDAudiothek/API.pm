@@ -349,6 +349,7 @@ sub _playlistFromJson {
 
     my $playlist = {
         description => $jsonPlaylist->{synopsis},
+        numberOfElements => $jsonPlaylist->{numberOfElements},
         episodes => _itemlistFromJson($jsonPlaylist->{items}->{nodes}, \&_episodeFromJson)
     };
 }

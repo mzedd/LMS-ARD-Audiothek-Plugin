@@ -19,9 +19,130 @@ package Plugins::ARDAudiothek::GraphQLQueries;
 use strict;
 
 use constant {
-    HOMESCREEN => 'graphql/homescreen/0',
-    EDITORIAL_CATEGORIES => 'graphql?query={editorialCategories {nodes {id title image {url}}}}',
-    PROGRAM_SET => 'graphql?query={programSet(id: {id}) {items(first: {count}, offset: {offset}) {nodes {id title image {url} summary}} title synopsis id}}'
+    DISCOVER =>
+    '{
+      homescreen {
+        sections {
+          nodes {
+            id
+            ... on Item {
+              id
+              synopsis
+              title
+              duration
+              image {
+                url
+              }
+              audios {
+                url
+              }
+              programSet {
+                title
+              }
+            }
+            ... on ProgramSet {
+              id
+              title
+              image {
+                url
+              }
+            }
+            ... on EditorialCollection {
+              id
+              image {
+                url
+              }
+              title
+            }
+          }
+        }
+      }
+    }',
+
+    EDITORIAL_CATEGORIES => 
+    '{
+      editorialCategories {
+        nodes {
+          id
+          title
+          image {
+            url
+          }
+        }
+      }
+    }',
+
+    EDITORIAL_CATEGORY_PLAYLISTS =>
+    '{
+      editorialCategory(id: $id) {
+        sections {
+          nodes {
+            ... on Item {
+              id
+              title
+              duration
+              synopsis
+              image {
+                url
+              }
+              audios {
+                url
+              }
+              programSet {
+                title
+              }
+            }
+            ... on ProgramSet {
+              id
+              title
+              image {
+                url
+              }
+            }
+          }
+        }
+      }
+    }',
+
+    PROGRAM_SET => 
+    '{
+      programSet(id: $id) {
+        id
+        title
+        items {
+          nodes {
+            audios {
+              url
+            }
+            image {
+              url
+            }
+            id
+            synopsis
+            title
+          }
+        }
+      }
+    }', 
+
+    EPISODE =>
+    '{
+      item(id: $id) {
+        id
+        audios {
+          url
+        }
+        duration
+        image {
+          url
+        }
+        programSet {
+          title
+        }
+        title
+        synopsis
+      }
+    }'
 };
 
 1;

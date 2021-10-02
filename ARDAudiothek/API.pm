@@ -99,29 +99,43 @@ sub getEditorialCategories {
 
 sub getEditorialCategoryPlaylists {
     my ($class, $callback, $args) = @_;
-    my $url = API_URL . 'graphql/editorialcategoriesbyid/' . $args->{id};
+    my $url = API_URL . 'graphql?query=' .
+    "{
+      editorialCategory(id: $args->{id}) {
+        id
+        sections {
+          nodes {
+            id
+            title
+            image {
+              url
+            }
+          }
+        }
+      }
+    }";
 
     my $adapter = sub {
         my $content = shift;
-        $content = $content->{data}->{rootEdCatById};
+        $content = $content->{data}->{editorialCategory};
 
         my $mostPlayedEpisodes = _itemlistFromJson(
-            $content->{sections}[1]->{items},
+            $content->{sections}[0]->{nodes},
             \&_episodeFromJson
         );
 
         my $newestEpisodes = _itemlistFromJson(
-            $content->{sections}[2]->{items},
+            $content->{sections}[1]->{nodes},
             \&_episodeFromJson
         );
 
         my $featuredProgramSets = _itemlistFromJson(
-            $content->{sections}[3]->{programSets},
+            $content->{sections}[2]->{nodes},
             \&_playlistFromJson
         );
 
         my $programSets = _itemlistFromJson(
-            $content->{sections}[4]->{programSets},
+            $content->{sections}[3]->{nodes},
             \&_playlistFromJson
         );
 
@@ -391,8 +405,8 @@ sub _episodeFromJson {
     my $jsonEpisode = shift;
 
     my $episode = {
-        url => $jsonEpisode->{_links}->{"mt:bestQualityPlaybackUrl"}->{href}, 
-        imageUrl => $jsonEpisode->{_links}->{"mt:image"}->{href},
+        url => exists $jsonEpisode->{_links}->{"mt:bestQualityPlaybackUrl"}->{href} ? $jsonEpisode->{_links}->{"mt:bestQualityPlaybackUrl"}->{href} : 'ardaudiothek://episode/' . $jsonEpisode->{id},
+        imageUrl => $jsonEpisode->{image}->{url},
         duration => $jsonEpisode->{duration},
         id => $jsonEpisode->{id},
         description => $jsonEpisode->{synopsis},

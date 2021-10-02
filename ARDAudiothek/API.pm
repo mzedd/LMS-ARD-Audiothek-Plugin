@@ -105,10 +105,28 @@ sub getEditorialCategoryPlaylists {
         id
         sections {
           nodes {
-            id
-            title
-            image {
-              url
+            ... on Item {
+              id
+              title
+              duration
+              synopsis
+              image {
+                url
+              }
+              audios {
+                url
+              }
+              programSet {
+                title
+              }
+            }
+            ... on ProgramSet {
+              id
+              title
+              synopsis
+              image {
+                url
+              }
             }
           }
         }
@@ -284,7 +302,24 @@ sub getOrganizations {
 sub getEpisode {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_URL . 'graphql/items/' . $args->{id};
+    my $url = API_URL . 'graphql?query=' .
+    "{
+      item(id: $args->{id}) {
+        id
+        audios {
+          url
+        }
+        duration
+        image {
+          url
+        }
+        programSet {
+          title
+        }
+        title
+        synopsis
+      }
+    }";
 
     my $adapter = sub {
         my $jsonEpisode = shift;
@@ -395,7 +430,7 @@ sub _programSetFromJson {
     my $programSet = {
         title => $jsonProgramSet->{title},
         id => $jsonProgramSet->{id},
-        description => $jsonProgramSet->{summary},
+        description => $jsonProgramSet->{synopsis},
         imageUrl => $jsonProgramSet->{image}->{url},
         episodes => _itemlistFromJson($jsonProgramSet->{items}->{nodes}, \&_episodeFromJson)
     };
@@ -405,7 +440,7 @@ sub _episodeFromJson {
     my $jsonEpisode = shift;
 
     my $episode = {
-        url => exists $jsonEpisode->{_links}->{"mt:bestQualityPlaybackUrl"}->{href} ? $jsonEpisode->{_links}->{"mt:bestQualityPlaybackUrl"}->{href} : 'ardaudiothek://episode/' . $jsonEpisode->{id},
+        url => $jsonEpisode->{audios}[0]->{url},
         imageUrl => $jsonEpisode->{image}->{url},
         duration => $jsonEpisode->{duration},
         id => $jsonEpisode->{id},

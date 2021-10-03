@@ -204,14 +204,13 @@ sub getProgramSet {
 sub getEditorialCollection {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_QUERY_URL; #replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::EDITORIAL_COLLECTION, $args->{id});
-    #$url =~ s/{id}/$args->{id}/i;
-    #$url =~ s/{count}/$args->{count}/i;
-    #$url =~ s/{offset}/$args->{offset}/i;
+    my $url = API_URL . 'graphql/editorialcollections/' . $args->{id} . '?'
+    .'offset=' . $args->{offset} . '&'
+    .'limit=' . $args->{limit};
 
     my $adapter = sub {
         my $jsonProgramSet = shift;
-        my $programSet = _playlistFromJson($jsonProgramSet->{data}->{programSet});
+        my $programSet = _editorialCollectionFromJson($jsonProgramSet->{data}->{editorialCollection});
         $callback->($programSet);
     };
 
@@ -354,6 +353,16 @@ sub _playlistFromJson {
     };
 }
 
+sub _editorialCollectionFromJson {
+    my $jsonPlaylist = shift;
+
+    my $playlist = {
+        description => $jsonPlaylist->{synopsis},
+        numberOfElements => $jsonPlaylist->{numberOfElements},
+        episodes => _itemlistFromJson($jsonPlaylist->{items}->{nodes}, \&_oldEpisodeFromJson)
+    };
+}
+
 sub _episodeFromJson {
     my $jsonEpisode = shift;
 
@@ -370,10 +379,27 @@ sub _episodeFromJson {
     return $episode;
 }
 
+sub _oldEpisodeFromJson {
+    my $jsonEpisode = shift;
+
+    my $episode = {
+        url => $jsonEpisode->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
+        imageUrl => $jsonEpisode->{_links}->{"mt:image"}->{href},
+        duration => $jsonEpisode->{duration},
+        id => $jsonEpisode->{id},
+        description => $jsonEpisode->{synopsis},
+        title => $jsonEpisode->{title},
+        show => $jsonEpisode->{programSet}->{title}
+    };
+
+    return $episode;
+}
+
 sub selectImageFormat {
     my $imageUrl = shift;
     my $thumbnailSize = 2.0 * $serverPrefs->{prefs}->{thumbSize};
 
+    $imageUrl =~ s/{ratio}/1x1/i; # for compability
     $imageUrl =~ s/16x9/1x1/i;
     $imageUrl =~ s/{width}/$thumbnailSize/i;
 

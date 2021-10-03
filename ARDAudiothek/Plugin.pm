@@ -122,7 +122,7 @@ sub searchProgramSets {
             my $items = programSetsToOPML($programSetsSearchresult->{programSets});
             my $numberOfElements = $programSetsSearchresult->{numberOfElements}; 
            
-            $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
+            $callback->({ items => $items, total => $numberOfElements });
         },
         {
             searchType  => 'programsets',
@@ -370,7 +370,7 @@ sub collectionsToOPML {
 sub collectionEpisodes {
     my ($client, $callback, $args, $params) = @_;
 
-    Plugins::ARDAudiothek::API->getPlaylist(
+    Plugins::ARDAudiothek::API->getEditorialCollection(
         sub {
             my $collection = shift;
 

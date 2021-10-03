@@ -53,9 +53,9 @@ use constant {
         sections {
           nodes {
             id
-            ... item
-            ... programSetMeta
-            ... on EditorialCollection {
+            ...item
+            ...programSetMeta
+            ...on EditorialCollection {
               id
               image {
                 url
@@ -65,9 +65,9 @@ use constant {
           }
         }
       }
-    }' .
-    FRAGMENT_ITEM .
-    FRAGMENT_PROGRAMSETMETA,
+    }'
+    .FRAGMENT_ITEM
+    .FRAGMENT_PROGRAMSETMETA,
 
     EDITORIAL_CATEGORIES => 
     '{
@@ -87,14 +87,14 @@ use constant {
       editorialCategory(id: $id) {
         sections {
           nodes {
-            ... item
-            ... programSetMeta
+            ...item
+            ...programSetMeta
           }
         }
       }
-    }' . 
-    FRAGMENT_ITEM .
-    FRAGMENT_PROGRAMSETMETA,
+    }'
+    .FRAGMENT_ITEM
+    .FRAGMENT_PROGRAMSETMETA,
 
     PROGRAM_SET => 
     '{
@@ -102,22 +102,22 @@ use constant {
         id
         title
         numberOfElements
-        items {
+        items(filter: {isPublished: {equalTo: true}}) {
           nodes {
-            ... item
+            ...item
           }
         }
       }
-    }' . 
-    FRAGMENT_ITEM, 
+    }'
+    .FRAGMENT_ITEM, 
 
     EPISODE =>
     '{
       item(id: $id) {
-        ... item
+        ...item
       }
-    }' . 
-    FRAGMENT_ITEM
+    }'
+    .FRAGMENT_ITEM
 };
 
 1;

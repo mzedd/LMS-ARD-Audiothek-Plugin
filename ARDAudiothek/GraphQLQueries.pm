@@ -19,34 +19,42 @@ package Plugins::ARDAudiothek::GraphQLQueries;
 use strict;
 
 use constant {
+    FRAGMENT_ITEM =>
+    'fragment item on Item {
+      id
+      title
+      synopsis
+      duration
+      image {
+        url
+      }
+      audios {
+        url
+      }
+      programSet {
+        title
+      }
+    }',
+
+    FRAGMENT_PROGRAMSETMETA =>
+    'fragment programSetMeta on ProgramSet {
+      id
+      title
+      image {
+        url
+      }
+    }'
+};
+
+use constant {
     DISCOVER =>
     '{
       homescreen {
         sections {
           nodes {
             id
-            ... on Item {
-              id
-              synopsis
-              title
-              duration
-              image {
-                url
-              }
-              audios {
-                url
-              }
-              programSet {
-                title
-              }
-            }
-            ... on ProgramSet {
-              id
-              title
-              image {
-                url
-              }
-            }
+            ... item
+            ... programSetMeta
             ... on EditorialCollection {
               id
               image {
@@ -57,7 +65,9 @@ use constant {
           }
         }
       }
-    }',
+    }' .
+    FRAGMENT_ITEM .
+    FRAGMENT_PROGRAMSETMETA,
 
     EDITORIAL_CATEGORIES => 
     '{
@@ -77,32 +87,14 @@ use constant {
       editorialCategory(id: $id) {
         sections {
           nodes {
-            ... on Item {
-              id
-              title
-              duration
-              synopsis
-              image {
-                url
-              }
-              audios {
-                url
-              }
-              programSet {
-                title
-              }
-            }
-            ... on ProgramSet {
-              id
-              title
-              image {
-                url
-              }
-            }
+            ... item
+            ... programSetMeta
           }
         }
       }
-    }',
+    }' . 
+    FRAGMENT_ITEM .
+    FRAGMENT_PROGRAMSETMETA,
 
     PROGRAM_SET => 
     '{
@@ -112,39 +104,20 @@ use constant {
         numberOfElements
         items {
           nodes {
-            audios {
-              url
-            }
-            image {
-              url
-            }
-            id
-            synopsis
-            title
-            duration
+            ... item
           }
         }
       }
-    }', 
+    }' . 
+    FRAGMENT_ITEM, 
 
     EPISODE =>
     '{
       item(id: $id) {
-        id
-        audios {
-          url
-        }
-        duration
-        image {
-          url
-        }
-        programSet {
-          title
-        }
-        title
-        synopsis
+        ... item
       }
-    }'
+    }' . 
+    FRAGMENT_ITEM
 };
 
 1;

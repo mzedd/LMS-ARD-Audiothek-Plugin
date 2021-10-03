@@ -47,8 +47,6 @@ sub initPlugin {
         weight  => 10
     );
 
-    Plugins::ARDAudiothek::API->clearCache();
-
     Slim::Player::ProtocolHandlers->registerHandler('ardaudiothek', 'Plugins::ARDAudiothek::ProtocolHandler');
 }
 
@@ -341,8 +339,6 @@ sub programSetEpisodes {
             my $items = episodesToOPML($programSet->{episodes}); 
             my $numberOfElements = $programSet->{numberOfElements}; 
  
-            $log->error(Data::Dump::dump($items));
-
             $callback->({ items => $items, total => $numberOfElements });
         },
         {
@@ -407,7 +403,7 @@ sub episodesToOPML {
             description => $episode->{description},
             duration => $episode->{duration},
             line1 => $episode->{title},
-            line2 => $episode->{id}
+            line2 => $episode->{show}
         };
     }
 

@@ -407,9 +407,8 @@ sub _call {
         sub {
             my $response = shift;
 
-            my $content = eval { from_json($response->content) };
-            
-            #$cache->set($cacheKey, $content, CACHE_TTL_IN_S);
+            my $content = eval { from_json($response->content) }; 
+            $cache->set($cacheKey, $content, CACHE_TTL_IN_S);
 
             $callback->($content);
         },

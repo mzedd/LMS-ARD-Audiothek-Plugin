@@ -219,7 +219,7 @@ sub getEditorialCollection {
 
 sub getOrganizations {
     my ($class, $callback, $args) = @_;
-    my $url = API_URL . 'graphql/organizations';
+    my $url = API_QUERY_URL . Plugins::ARDAudiothek::GraphQLQueries::ORGANIZATIONS;
 
     my $adapter = sub {
         my $content = shift;
@@ -287,10 +287,9 @@ sub _organizationFromJson {
     my $jsonOrganization = shift;
 
     my $organization = {
-        name => $jsonOrganization->{name},
-        id => $jsonOrganization->{id},
+        name => $jsonOrganization->{title},
         publicationServices => _itemlistFromJson(
-            $jsonOrganization->{publicationServices}->{nodes},
+            $jsonOrganization->{publicationServicesByOrganizationName}->{nodes},
             \&_publicationServiceFromJson
         )
     };
@@ -303,9 +302,7 @@ sub _publicationServiceFromJson {
 
     my $publicationService = {
         name => $jsonPublicationService->{title},
-        id => $jsonPublicationService->{id},
-        imageUrl => $jsonPublicationService->{_links}->{"mt:image"}->{href},
-        description => $jsonPublicationService->{synopsis},
+        imageUrl => $jsonPublicationService->{image}->{url},
         programSets => _itemlistFromJson(
             $jsonPublicationService->{programSets}->{nodes},
             \&_playlistMetaFromJson
@@ -313,18 +310,17 @@ sub _publicationServiceFromJson {
     };
 
     # if there is a liveStream - add it
-    if($jsonPublicationService->{liveStreams}->{numberOfElements} >= 1) {
+    if($jsonPublicationService->{permanentLivestreams}->{totalCount} >= 1) {
         my @liveStreamUrls;
 
-        for my $liveStream (@{$jsonPublicationService->{liveStreams}->{items}}) {
-            push (@liveStreamUrls, $liveStream->{stream}->{streamUrl});
+        for my $liveStream (@{$jsonPublicationService->{permanentLivestreams}->{nodes}}) {
+            push (@liveStreamUrls, $liveStream->{audios}[0]->{url});
         }
-
-        $log->error(Data::Dump::dump(@liveStreamUrls));
 
         $publicationService->{liveStream} = {
             name => 'Livestream',
-            url => \@liveStreamUrls
+            url => \@liveStreamUrls,
+            imageUrl => $jsonPublicationService->{image}->{url}
         };
     }
 

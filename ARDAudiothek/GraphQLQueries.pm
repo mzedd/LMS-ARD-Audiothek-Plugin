@@ -43,6 +43,17 @@ use constant {
       image {
         url
       }
+    }',
+
+    FRAGMENT_PERMANENTLIVESTREAM =>
+    'fragment permanentLivestreams on PermanentLivestream {
+      title
+      image {
+        url
+      }
+      audios {
+        url
+      }
     }'
 };
 
@@ -67,6 +78,39 @@ use constant {
       }
     }'
     .FRAGMENT_ITEM
+    .FRAGMENT_PROGRAMSETMETA,
+
+    ORGANIZATIONS =>
+    '{
+      organizations {
+        nodes {
+          title
+          image {
+            url
+          }
+          publicationServicesByOrganizationName {
+            nodes {
+              title
+              image {
+                url
+              }
+              permanentLivestreams {
+                totalCount
+                nodes {
+                  ...permanentLivestreams
+                }
+              }
+              programSets {
+                nodes {
+                  ...programSetMeta
+                }
+              }
+            }
+          }
+        }
+      }
+    }'
+    .FRAGMENT_PERMANENTLIVESTREAM
     .FRAGMENT_PROGRAMSETMETA,
 
     EDITORIAL_CATEGORIES => 

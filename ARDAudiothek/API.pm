@@ -25,7 +25,10 @@ use Slim::Utils::Log;
 use Slim::Utils::Cache;
 use Slim::Utils::Prefs;
 
+use Plugins::ARDAudiothek::GraphQLQueries;
+
 use constant API_URL => 'https://api.ardaudiothek.de/';
+use constant API_QUERY_URL => API_URL . 'graphql?query=';
 use constant TIMEOUT_IN_S => 20;
 use constant CACHE_TTL_IN_S => 1 * 3600; # cache one hour
 
@@ -33,47 +36,93 @@ my $log = logger('plugin.ardaudiothek');
 my $cache = Slim::Utils::Cache->new();
 my $serverPrefs = preferences('server');
 
-sub getHomescreen {
+sub search {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_URL . 'homescreen';
+    my $url = API_QUERY_URL . Plugins::ARDAudiothek::GraphQLQueries::SEARCH;
+    $url =~ s/\$query/$args->{search}/i;
+    $url =~ s/\$offset/$args->{offset}/i;
+    $url =~ s/\$limit/$args->{limit}/i;
 
     my $adapter = sub {
         my $content = shift;
+        $content = $content->{data}->{search};
 
-        my $discoverEpisodes = _itemlistFromJson(
-            $content->{_embedded}->{"mt:stageItems"}->{_embedded}->{"mt:items"},
+        my $programSets = _itemlistFromJson(
+            $content->{programSets}->{nodes},
+            \&_playlistMetaFromJson
+        );
+
+        my $editorialCategories = _itemlistFromJson(
+            $content->{editorialCategories}->{nodes},
+            \&_categoryFromJson
+        );
+
+        my $editorialCollections = _itemlistFromJson(
+            $content->{editorialCollections}->{nodes},
+            \&_playlistMetaFromJson
+        );
+
+        my $episodes = _itemlistFromJson(
+            $content->{items}->{nodes},
+            \&_episodeFromJson
+        );
+
+        my $searchResults = {
+            programSets => $programSets,
+            editorialCategories => $editorialCategories,
+            editorialCollections => $editorialCollections,
+            episodes => $episodes
+        };
+
+        $callback->($searchResults);
+    };
+    
+    _call($url, $adapter);
+}
+
+sub getDiscover {
+    my ($class, $callback, $args) = @_;
+
+    my $url = API_QUERY_URL . Plugins::ARDAudiothek::GraphQLQueries::DISCOVER;
+
+    my $adapter = sub {
+        my $content = shift;
+        $content = $content->{data}->{homescreen};
+
+        my $stageEpisodes = _itemlistFromJson(
+            $content->{sections}[0]->{nodes},
             \&_episodeFromJson
         );
         
         my $editorialCollections = _itemlistFromJson(
-            $content->{_embedded}->{"mt:editorialCollections"}->{_embedded}->{"mt:editorialCollections"},
-            \&_playlistFromJson
+            $content->{sections}[1]->{nodes},
+            \&_playlistMetaFromJson
         );
 
         my $featuredPlaylists = _itemlistFromJson(
-            $content->{_embedded}->{"mt:featuredPlaylists"}->{_embedded}->{"mt:editorialCollections"},
-            \&_playlistFromJson);
+            $content->{sections}[2]->{nodes},
+            \&_playlistMetaFromJson);
 
         my $mostPlayedEpisodes = _itemlistFromJson(
-            $content->{_embedded}->{"mt:mostPlayed"}->{_embedded}->{"mt:items"},
+            $content->{sections}[3]->{nodes},
             \&_episodeFromJson
         );
 
         my $featuredProgramSets = _itemlistFromJson(
-            $content->{_embedded}->{"mt:featuredProgramSets"}->{_embedded}->{"mt:programSets"},
-            \&_playlistFromJson
+            $content->{sections}[4]->{nodes},
+            \&_playlistMetaFromJson
         );
 
-        my $homescreen = {
-            discoverEpisodes => $discoverEpisodes,
+        my $discover = {
+            stageEpisodes => $stageEpisodes,
             editorialCollections => $editorialCollections,
             featuredPlaylists => $featuredPlaylists,
             mostPlayedEpisodes => $mostPlayedEpisodes,
             featuredProgramSets => $featuredProgramSets
         };
 
-        $callback->($homescreen);
+        $callback->($discover);
     };
 
     _call($url, $adapter);
@@ -81,12 +130,15 @@ sub getHomescreen {
 
 sub getEditorialCategories {
     my ($class, $callback, $args) = @_;
-    my $url = API_URL . 'editorialcategories';
+    my $url = API_QUERY_URL . Plugins::ARDAudiothek::GraphQLQueries::EDITORIAL_CATEGORIES;
 
     my $adapter = sub {
         my $content = shift;
 
-        my $categorylist = _itemlistFromJson($content->{_embedded}->{"mt:editorialCategories"}, \&_categoryFromJson);
+        my $categorylist = _itemlistFromJson(
+            $content->{data}->{editorialCategories}->{nodes},
+            \&_categoryFromJson
+        );
         
         $callback->($categorylist);
     };
@@ -96,29 +148,31 @@ sub getEditorialCategories {
 
 sub getEditorialCategoryPlaylists {
     my ($class, $callback, $args) = @_;
-    my $url = API_URL . 'editorialcategories/' . $args->{id};
+    my $url = API_QUERY_URL .
+        replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::EDITORIAL_CATEGORY_PLAYLISTS, $args->{id});
 
     my $adapter = sub {
         my $content = shift;
+        $content = $content->{data}->{editorialCategory};
 
         my $mostPlayedEpisodes = _itemlistFromJson(
-            $content->{_embedded}->{"mt:mostPlayed"},
+            $content->{sections}[0]->{nodes},
             \&_episodeFromJson
         );
 
         my $newestEpisodes = _itemlistFromJson(
-            $content->{_embedded}->{"mt:items"},
+            $content->{sections}[1]->{nodes},
             \&_episodeFromJson
         );
 
         my $featuredProgramSets = _itemlistFromJson(
-            $content->{_embedded}->{"mt:featuredProgramSets"},
-            \&_playlistFromJson
+            $content->{sections}[2]->{nodes},
+            \&_playlistMetaFromJson
         );
 
         my $programSets = _itemlistFromJson(
-            $content->{_embedded}->{"mt:programSets"},
-            \&_playlistFromJson
+            $content->{sections}[3]->{nodes},
+            \&_playlistMetaFromJson
         );
 
         my $editorialCategoryPlaylists = {
@@ -134,98 +188,15 @@ sub getEditorialCategoryPlaylists {
     _call($url, $adapter);
 }
 
-sub search {
-    my ($class, $callback, $args) = @_;
-
-    my $offset = 0;
-    if(defined $args->{offset}) {
-        $offset = $args->{offset};
-    }
-
-    my $url = API_URL . "search/$args->{searchType}?query=$args->{searchWord}&offset=$offset&limit=$args->{limit}";
-
-    my $programSetsAdapter = sub {
-        my $content = shift;
-        
-        my $programSetsSearchresult = {
-            programSets => _itemlistFromJson($content->{_embedded}->{"mt:programSets"}, \&_playlistFromJson),
-            numberOfElements => $content->{numberOfElements}
-        };
-            
-        $callback->($programSetsSearchresult);
-    };
-
-    my $episodesAdapter = sub {
-        my $content = shift;
-        my $episodesSearchresult = {
-            episodes => _itemlistFromJson($content->{_embedded}->{"mt:items"}, \&_episodeFromJson),
-            numberOfElements => $content->{numberOfElements}
-        };
-
-        $callback->($episodesSearchresult);
-    };
-
-    my $adapter;
-    if($args->{searchType} eq 'programsets') {
-        $adapter = $programSetsAdapter;
-    }
-    elsif($args->{searchType} eq 'items') {
-        $adapter = $episodesAdapter;
-    }
-    else {
-        $callback->(undef);
-    }
-
-    _call($url, $adapter);
-}
-
-sub getPlaylist {
-    my ($class, $callback, $args) = @_;
-
-    my $url = API_URL;
-    if($args->{type} eq 'programset') {
-        $url = $url . "programsets/$args->{id}?order=desc&";
-    }
-    elsif($args->{type} eq 'collection') {
-        $url = $url . "editorialcollections/$args->{id}?";
-    }
-    else {
-        $callback->(undef);
-    }
-
-    my $offset = 0;
-    if(defined $args->{offset}) {
-        $offset = $args->{offset};
-    }
-
-    $url = $url . "offset=$offset&limit=$args->{limit}";
-
-    my $adapter = sub {
-        my $jsonPlaylist = shift;
-
-        my $playlist = {
-            title => $jsonPlaylist->{title},
-            id => $jsonPlaylist->{id},
-            numberOfElements => $jsonPlaylist->{numberOfElements},
-            description => $jsonPlaylist->{synopsis},
-            episodes => _itemlistFromJson($jsonPlaylist->{_embedded}->{"mt:items"}, \&_episodeFromJson)
-        };
-
-        $callback->($playlist);
-    };
-
-    _call($url, $adapter);
-}
-
 sub getOrganizations {
     my ($class, $callback, $args) = @_;
-    my $url = API_URL . 'organizations';
+    my $url = API_QUERY_URL . Plugins::ARDAudiothek::GraphQLQueries::ORGANIZATIONS;
 
     my $adapter = sub {
         my $content = shift;
 
         my $organizationlist = _itemlistFromJson(
-            $content->{_embedded}->{"mt:organizations"},
+            $content->{data}->{organizations}->{nodes},
             \&_organizationFromJson
         );
 
@@ -235,19 +206,51 @@ sub getOrganizations {
     _call($url, $adapter);
 }
 
+sub getProgramSet {
+    my ($class, $callback, $args) = @_;
+
+    my $url = API_QUERY_URL . replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::PROGRAM_SET, $args->{id});
+    $url =~ s/\$offset/$args->{offset}/i;
+    $url =~ s/\$limit/$args->{limit}/i;
+
+    my $adapter = sub {
+        my $jsonProgramSet = shift;
+        my $programSet = _playlistFromJson($jsonProgramSet->{data}->{programSet});
+        $callback->($programSet);
+    };
+
+    _call($url, $adapter);
+}
+
+sub getEditorialCollection {
+    my ($class, $callback, $args) = @_;
+
+    my $url = API_URL . 'graphql/editorialcollections/' . $args->{id} . '?'
+    .'offset=' . $args->{offset} . '&'
+    .'limit=' . $args->{limit};
+
+    my $adapter = sub {
+        my $jsonProgramSet = shift;
+        my $programSet = _editorialCollectionFromJson($jsonProgramSet->{data}->{editorialCollection});
+        $callback->($programSet);
+    };
+
+    _call($url, $adapter);
+}
+
 sub getEpisode {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_URL . 'items/' . $args->{id};
-
+    my $url = API_QUERY_URL . replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::EPISODE, $args->{id});
+    
     my $adapter = sub {
         my $jsonEpisode = shift;
-        
-        $callback->(_episodeFromJson($jsonEpisode));
+
+        $callback->(_episodeFromJson($jsonEpisode->{data}->{item}));
     };
 
     my $cached = _call($url, $adapter);
-    return _episodeFromJson($cached);
+    return _episodeFromJson($cached->{data}->{item});
 }
 
 sub clearCache {
@@ -275,7 +278,7 @@ sub _categoryFromJson {
     my $jsonCategory = shift;
 
     my $category = {
-        imageUrl => $jsonCategory->{_links}->{"mt:image"}->{href},
+        imageUrl => $jsonCategory->{image}->{url},
         title => $jsonCategory->{title},
         id => $jsonCategory->{id}
     };
@@ -287,10 +290,9 @@ sub _organizationFromJson {
     my $jsonOrganization = shift;
 
     my $organization = {
-        name => $jsonOrganization->{name},
-        id => $jsonOrganization->{id},
+        name => $jsonOrganization->{title},
         publicationServices => _itemlistFromJson(
-            $jsonOrganization->{_embedded}->{"mt:publicationServices"},
+            $jsonOrganization->{publicationServicesByOrganizationName}->{nodes},
             \&_publicationServiceFromJson
         )
     };
@@ -303,32 +305,36 @@ sub _publicationServiceFromJson {
 
     my $publicationService = {
         name => $jsonPublicationService->{title},
-        id => $jsonPublicationService->{id},
-        imageUrl => $jsonPublicationService->{_links}->{"mt:image"}->{href},
-        description => $jsonPublicationService->{synopsis},
+        imageUrl => $jsonPublicationService->{image}->{url},
         programSets => _itemlistFromJson(
-            $jsonPublicationService->{_embedded}->{"mt:programSets"},
-            \&_playlistFromJson
+            $jsonPublicationService->{programSets}->{nodes},
+            \&_playlistMetaFromJson
         )
     };
 
     # if there is a liveStream - add it
-    if($jsonPublicationService->{_embedded}->{"mt:liveStreams"}->{numberOfElements} == 1) {
+    if($jsonPublicationService->{permanentLivestreams}->{totalCount} >= 1) {
+        my @liveStreamUrls;
+
+        for my $liveStream (@{$jsonPublicationService->{permanentLivestreams}->{nodes}}) {
+            push (@liveStreamUrls, $liveStream->{audios}[0]->{url});
+        }
+
         $publicationService->{liveStream} = {
             name => 'Livestream',
-            imageUrl => $jsonPublicationService->{_links}->{"mt:image"}->{href},
-            url => $jsonPublicationService->{_embedded}->{"mt:liveStreams"}->{_embedded}->{"mt:items"}->{stream}->{streamUrl}
+            url => \@liveStreamUrls,
+            imageUrl => $jsonPublicationService->{image}->{url}
         };
     }
 
     return $publicationService;
 }
 
-sub _playlistFromJson {
+sub _playlistMetaFromJson {
     my $jsonPlaylist = shift;
 
     my $playlist = {
-        imageUrl => $jsonPlaylist->{_links}->{"mt:image"}->{href},
+        imageUrl => $jsonPlaylist->{image}->{url},
         title => $jsonPlaylist->{title},
         id => $jsonPlaylist->{id}
     };
@@ -336,17 +342,54 @@ sub _playlistFromJson {
     return $playlist;
 }
 
+sub _playlistFromJson {
+    my $jsonPlaylist = shift;
+
+    my $playlist = {
+        description => $jsonPlaylist->{synopsis},
+        numberOfElements => $jsonPlaylist->{numberOfElements},
+        episodes => _itemlistFromJson($jsonPlaylist->{items}->{nodes}, \&_episodeFromJson)
+    };
+}
+
+sub _editorialCollectionFromJson {
+    my $jsonPlaylist = shift;
+
+    my $playlist = {
+        description => $jsonPlaylist->{synopsis},
+        numberOfElements => $jsonPlaylist->{numberOfElements},
+        episodes => _itemlistFromJson($jsonPlaylist->{items}->{nodes}, \&_oldEpisodeFromJson)
+    };
+}
+
 sub _episodeFromJson {
     my $jsonEpisode = shift;
-    
+
     my $episode = {
-        url => $jsonEpisode->{_links}->{"mt:bestQualityPlaybackUrl"}->{href}, 
+        url => $jsonEpisode->{audios}[0]->{url},
+        imageUrl => $jsonEpisode->{image}->{url},
+        duration => $jsonEpisode->{duration},
+        id => $jsonEpisode->{id},
+        description => $jsonEpisode->{synopsis},
+        title => $jsonEpisode->{title},
+        show => $jsonEpisode->{programSet}->{title}
+    };
+
+    return $episode;
+}
+
+# compability
+sub _oldEpisodeFromJson {
+    my $jsonEpisode = shift;
+
+    my $episode = {
+        url => $jsonEpisode->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
         imageUrl => $jsonEpisode->{_links}->{"mt:image"}->{href},
         duration => $jsonEpisode->{duration},
         id => $jsonEpisode->{id},
         description => $jsonEpisode->{synopsis},
         title => $jsonEpisode->{title},
-        show => $jsonEpisode->{_embedded}->{"mt:programSet"}->{title}
+        show => $jsonEpisode->{programSet}->{title}
     };
 
     return $episode;
@@ -354,12 +397,21 @@ sub _episodeFromJson {
 
 sub selectImageFormat {
     my $imageUrl = shift;
-    my $thumbnailSize = 4.0 * "$serverPrefs->{prefs}->{thumbSize}";
+    my $thumbnailSize = 2.0 * $serverPrefs->{prefs}->{thumbSize};
 
-    $imageUrl =~ s/{ratio}/1x1/i;
+    $imageUrl =~ s/{ratio}/1x1/i; # for compability
+    $imageUrl =~ s/16x9/1x1/i;
     $imageUrl =~ s/{width}/$thumbnailSize/i;
 
     return $imageUrl;
+}
+
+sub replaceIdInQuery {
+    my ($query, $id) = @_;
+    
+    $query =~ s/\$id/$id/i;
+    
+    return $query;
 }
 
 # low level api call
@@ -381,8 +433,7 @@ sub _call {
         sub {
             my $response = shift;
 
-            my $content = eval { from_json($response->content) };
-            
+            my $content = eval { from_json($response->content) }; 
             $cache->set($cacheKey, $content, CACHE_TTL_IN_S);
 
             $callback->($content);

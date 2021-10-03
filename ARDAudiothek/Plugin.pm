@@ -22,8 +22,6 @@ use Slim::Utils::Log;
 use Slim::Utils::Strings qw(string cstring);
 use Slim::Utils::Prefs;
 
-use List::Util 'max';
-
 use Plugins::ARDAudiothek::API;
 
 my $log = Slim::Utils::Log->addLogCategory( {
@@ -90,7 +88,7 @@ sub homescreen {
         url => \&editorialCategories
     };
 
-    $callback->({ items => \@items});
+    $callback->({items => \@items});
 }
 
 sub search {
@@ -116,7 +114,7 @@ sub search {
             push @items, {
                 name  => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCOLLECTIONS'),
                 type  => 'link',
-                items => collectionsToOPML($searchResults->{editorialCollections})
+                items => editorialCollectionsToOPML($searchResults->{editorialCollections})
             };
 
             push @items, {
@@ -125,7 +123,7 @@ sub search {
                 items => episodesToOPML($searchResults->{episodes})
             };
 
-            $callback->({ items => \@items });
+            $callback->({items => \@items});
         },{
             search => $args->{search},
             offset => 0,
@@ -151,13 +149,13 @@ sub discover {
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_OUR_FAVORITES'),
                 type => 'link',
-                items => collectionsToOPML($content->{editorialCollections}) 
+                items => editorialCollectionsToOPML($content->{editorialCollections}) 
             };
 
             push @items, {
                 name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_TOPICS'),
                 type => 'link',
-                items => collectionsToOPML($content->{featuredPlaylists})
+                items => editorialCollectionsToOPML($content->{featuredPlaylists})
             };
 
             push @items, {
@@ -183,19 +181,8 @@ sub editorialCategories {
     Plugins::ARDAudiothek::API->getEditorialCategories(
         sub {
             my $categorylist = shift;
-            my @items;
-            
-            for my $category (@{$categorylist}) {
-                push @items, {
-                    name => $category->{title},
-                    type => 'link',
-                    url => \&editorialCategoryPlaylists,
-                    image => Plugins::ARDAudiothek::API::selectImageFormat($category->{imageUrl}),
-                    passthrough => [ {id => $category->{id}} ]
-                }
-            }
-
-            $callback->({items => \@items});
+            my $items = editorialCategoriesToOPML($categorylist);
+            $callback->({items => $items});
         }
     );
 }
@@ -346,7 +333,7 @@ sub programSetEpisodes {
     );
 }
 
-sub collectionsToOPML {
+sub editorialCollectionsToOPML {
     my $collectionlist = shift;
     my @items;
 

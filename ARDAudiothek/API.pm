@@ -39,10 +39,6 @@ my $serverPrefs = preferences('server');
 sub search {
     my ($class, $callback, $args) = @_;
 
-    if(not defined $args->{offset}) {
-        $args->{offset} = 0;
-    }
-
     my $url = API_QUERY_URL . Plugins::ARDAudiothek::GraphQLQueries::SEARCH;
     $url =~ s/\$query/$args->{search}/i;
     $url =~ s/\$offset/$args->{offset}/i;
@@ -139,7 +135,10 @@ sub getEditorialCategories {
     my $adapter = sub {
         my $content = shift;
 
-        my $categorylist = _itemlistFromJson($content->{data}->{editorialCategories}->{nodes}, \&_categoryFromJson);
+        my $categorylist = _itemlistFromJson(
+            $content->{data}->{editorialCategories}->{nodes},
+            \&_categoryFromJson
+        );
         
         $callback->($categorylist);
     };
@@ -379,6 +378,7 @@ sub _episodeFromJson {
     return $episode;
 }
 
+# compability
 sub _oldEpisodeFromJson {
     my $jsonEpisode = shift;
 

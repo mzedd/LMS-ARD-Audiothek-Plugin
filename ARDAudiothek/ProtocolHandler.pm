@@ -63,30 +63,31 @@ sub scanUrl {
 sub explodePlaylist {
     my ($class, $client, $uri, $callback) = @_;
 
+    my $adapter = sub {
+        my $playlist = shift;
+        my @episodeUris;
+
+        for my $episode (@{$playlist->{episodes}}) {
+            push(@episodeUris, 'ardaudiothek://episode/' . $episode->{id});
+        }
+
+        $callback->([@episodeUris]);
+    };
+
+    my $variables = {
+        id => _itemIdFromUri($uri),
+        offset => 0,
+        limit => PLAYLIST_EPISODE_LIMIT
+    };
+
     if($uri =~ /ardaudiothek:\/\/episode\/[0-9]+/) {
         $callback->([$uri]);
     }
-    elsif($uri =~ /ardaudiothek:\/\/(programset|collection)\/[0-9]+/) {
-        my $id = _itemIdFromUri($uri);
-        my $playlistType = _typeFromUri($uri);
-
-        Plugins::ARDAudiothek::API->getPlaylist(
-            sub {
-                my $playlist = shift;
-                my @episodeUris;
-
-                for my $episode (@{$playlist->{episodes}}) {
-                    push(@episodeUris, 'ardaudiothek://episode/' . $episode->{id});
-                }
-
-                $callback->([@episodeUris]);
-            },{
-                id => $id,
-                type => $playlistType,
-                offset => 0,
-                limit => PLAYLIST_EPISODE_LIMIT
-            }
-        );
+    elsif($uri =~ /ardaudiothek:\/\/programset\/[0-9]+/) {
+        Plugins::ARDAudiothek::API->getProgramSet($adapter, $variables);
+    }
+    elsif($uri =~ /ardaudiothek:\/\/collection\/[0-9]+/) {
+        Plugins::ARDAudiothek::API->getEditorialCollection($adapter, $variables);
     }
     else {
         $callback->([]);
@@ -95,6 +96,11 @@ sub explodePlaylist {
 
 sub getMetadataFor {
     my ($class, $client, $uri) = @_;
+
+    # skip everthing what does not the custom uri
+    if($uri !~ m/ardaudiothek:\/\/episode\/[0-9]+/) {
+        return undef;
+    }
 
     my $episode = Plugins::ARDAudiothek::API->getEpisode(sub {}, {id => _itemIdFromUri($uri)});
 
@@ -121,15 +127,6 @@ sub _itemIdFromUri {
     $id =~ s/\D//g;
     
     return $id;
-}
-
-sub _typeFromUri {
-    my $uri = shift;
-
-    my $type = $uri;
-    $type =~ s/(ardaudiothek:\/\/)|(\/[0-9]+)//g;
-
-    return $type;
 }
 
 1;

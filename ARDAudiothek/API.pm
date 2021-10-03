@@ -189,8 +189,8 @@ sub getProgramSet {
     my ($class, $callback, $args) = @_;
 
     my $url = API_QUERY_URL . replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::PROGRAM_SET, $args->{id});
-    #$url =~ s/{count}/$args->{count}/i;
-    #$url =~ s/{offset}/$args->{offset}/i;
+    $url =~ s/\$offset/$args->{offset}/i;
+    $url =~ s/\$limit/$args->{limit}/i;
 
     my $adapter = sub {
         my $jsonProgramSet = shift;

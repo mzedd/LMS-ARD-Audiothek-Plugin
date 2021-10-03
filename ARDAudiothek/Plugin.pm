@@ -331,7 +331,11 @@ sub programSetsToOPML {
 
 sub programSetEpisodes {
     my ($client, $callback, $args, $params) = @_;
-    
+
+    if(not defined $args->{index}) {
+        $args->{index} = 0;
+    }
+
     Plugins::ARDAudiothek::API->getProgramSet(
         sub {
             my $programSet = shift;
@@ -380,7 +384,6 @@ sub collectionEpisodes {
             $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
         },
         {
-            type => 'collection',
             id => $params->{id},
             offset => $args->{index},
             limit => $serverPrefs->{prefs}->{itemsPerPage}

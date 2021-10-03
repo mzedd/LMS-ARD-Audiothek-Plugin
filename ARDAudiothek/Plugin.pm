@@ -22,6 +22,8 @@ use Slim::Utils::Log;
 use Slim::Utils::Strings qw(string cstring);
 use Slim::Utils::Prefs;
 
+use List::Util 'max';
+
 use Plugins::ARDAudiothek::API;
 
 my $log = Slim::Utils::Log->addLogCategory( {
@@ -93,63 +95,41 @@ sub homescreen {
 
 sub search {
     my ($client, $callback, $args) = @_;
-    my @items;
-
-    push @items, {
-        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_PROGRAMSETS'),
-        type => 'link',
-        url => \&searchProgramSets,
-        passthrough => [{ search => $args->{search} }]
-    };
-
-    push @items, {
-        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_ITEMS'),
-        type => 'link',
-        url => \&searchEpisodes,
-        passthrough => [{ search => $args->{search} }]
-    };
-
-    $callback->({ items => \@items });
-}
-
-sub searchProgramSets {
-    my ($client, $callback, $args, $params) = @_;
 
     Plugins::ARDAudiothek::API->search(
         sub {
-            my $programSetsSearchresult = shift;
-           
-            my $items = programSetsToOPML($programSetsSearchresult->{programSets});
-            my $numberOfElements = $programSetsSearchresult->{numberOfElements}; 
-           
-            $callback->({ items => $items, total => $numberOfElements });
-        },
-        {
-            searchType  => 'programsets',
-            searchWord  => $params->{search},
-            offset      => $args->{index},
-            limit       => $serverPrefs->{prefs}->{itemsPerPage}
-        }
-    );
-}
+            my $searchResults = shift;
+            my @items;
+ 
+            push @items, {
+                name  => cstring($client, 'PLUGIN_ARDAUDIOTHEK_PROGRAMSETS'),
+                type  => 'link',
+                items => programSetsToOPML($searchResults->{programSets})
+            };
 
-sub searchEpisodes {
-    my ($client, $callback, $args, $params) = @_;
+            push @items, {
+                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES'),
+                type => 'link',
+                items => editorialCategoriesToOPML($searchResults->{editorialCategories})
+            };
 
-    Plugins::ARDAudiothek::API->search(
-        sub {
-            my $episodesSearchresult = shift;
-            
-            my $items = episodesToOPML($episodesSearchresult->{episodes});
-            my $numberOfElements = $episodesSearchresult->{numberOfElements}; 
-           
-            $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
-        },
-        {
-            searchType  => 'items',
-            searchWord  => $params->{search},
-            offset      => $args->{index},
-            limit       => $serverPrefs->{prefs}->{itemsPerPage}
+            push @items, {
+                name  => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCOLLECTIONS'),
+                type  => 'link',
+                items => collectionsToOPML($searchResults->{editorialCollections})
+            };
+
+            push @items, {
+                name  => cstring($client, 'PLUGIN_ARDAUDIOTHEK_ITEMS'),
+                type  => 'link',
+                items => episodesToOPML($searchResults->{episodes})
+            };
+
+            $callback->({ items => \@items });
+        },{
+            search => $args->{search},
+            offset => 0,
+            limit  => $serverPrefs->{prefs}->{itemsPerPage}
         }
     );
 }
@@ -311,6 +291,23 @@ sub publicationServices {
     return \@items;
 }
 
+sub editorialCategoriesToOPML {
+    my $editorialCategories = shift;
+    my @items;
+
+    for my $editorialCategory (@{$editorialCategories}) {
+        push @items, {
+            name => $editorialCategory->{title},
+            type => 'link',
+            image => Plugins::ARDAudiothek::API::selectImageFormat($editorialCategory->{imageUrl}),
+            url => \&editorialCategoryPlaylists,
+            passthrough => [{id => $editorialCategory->{id}}]
+        };
+    }
+
+    return \@items;
+}
+
 sub programSetsToOPML {
     my $programSetlist = shift;
     my @items;
@@ -332,10 +329,6 @@ sub programSetsToOPML {
 sub programSetEpisodes {
     my ($client, $callback, $args, $params) = @_;
 
-    if(not defined $args->{index}) {
-        $args->{index} = 0;
-    }
-
     Plugins::ARDAudiothek::API->getProgramSet(
         sub {
             my $programSet = shift;
@@ -343,11 +336,11 @@ sub programSetEpisodes {
             my $items = episodesToOPML($programSet->{episodes}); 
             my $numberOfElements = $programSet->{numberOfElements}; 
  
-            $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
+            $callback->({ items => $items, total => $numberOfElements });
         },
         {
             id => $params->{id},
-            offset => $args->{index},
+            offset => 0,
             limit => $serverPrefs->{prefs}->{itemsPerPage}
         }
     );
@@ -381,11 +374,11 @@ sub collectionEpisodes {
             my $items = episodesToOPML($collection->{episodes});
             my $numberOfElements = $collection->{numberOfElements}; 
            
-            $callback->({ items => $items, offset => $args->{index}, total => $numberOfElements });
+            $callback->({ items => $items, total => $numberOfElements });
         },
         {
             id => $params->{id},
-            offset => $args->{index},
+            offset => 0,
             limit => $serverPrefs->{prefs}->{itemsPerPage}
         }
     );

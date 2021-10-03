@@ -54,31 +54,73 @@ use constant {
       audios {
         url
       }
+    }',
+
+    FRAGMENT_EDITORIALCATEGORYMETA =>
+    'fragment editorialCategoryMeta on EditorialCategory {
+      id
+      title
+      image {
+        url
+      }
+    }',
+
+    FRAGMENT_EDITORIALCOLLECTIONMETA =>
+    'fragment editorialCollectionMeta on EditorialCollection {
+      id
+      title
+      image {
+        url
+      }
     }'
 };
 
 use constant {
+    SEARCH =>
+    '{
+      search(query: "$query", offset: $offset, limit: $limit) {
+        programSets {
+          nodes {
+            ...programSetMeta
+          }
+        }
+        editorialCategories {
+          nodes {
+            ...editorialCategoryMeta
+          }
+        }
+        editorialCollections {
+          nodes {
+            ...editorialCollectionMeta
+          }
+        }
+        items {
+          nodes {
+            ...item
+          }
+        }
+      }
+    }'
+    .FRAGMENT_PROGRAMSETMETA
+    .FRAGMENT_EDITORIALCATEGORYMETA
+    .FRAGMENT_EDITORIALCOLLECTIONMETA
+    .FRAGMENT_ITEM,
+
     DISCOVER =>
     '{
       homescreen {
         sections {
           nodes {
-            id
             ...item
             ...programSetMeta
-            ...on EditorialCollection {
-              id
-              image {
-                url
-              }
-              title
-            }
+            ...editorialCollectionMeta
           }
         }
       }
     }'
     .FRAGMENT_ITEM
-    .FRAGMENT_PROGRAMSETMETA,
+    .FRAGMENT_PROGRAMSETMETA
+    .FRAGMENT_EDITORIALCOLLECTIONMETA,
 
     ORGANIZATIONS =>
     '{
@@ -117,14 +159,11 @@ use constant {
     '{
       editorialCategories {
         nodes {
-          id
-          title
-          image {
-            url
-          }
+          ...editorialCategoryMeta
         }
       }
-    }',
+    }'
+    .FRAGMENT_EDITORIALCATEGORYMETA,
 
     EDITORIAL_CATEGORY_PLAYLISTS =>
     '{

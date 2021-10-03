@@ -36,6 +36,55 @@ my $log = logger('plugin.ardaudiothek');
 my $cache = Slim::Utils::Cache->new();
 my $serverPrefs = preferences('server');
 
+sub search {
+    my ($class, $callback, $args) = @_;
+
+    if(not defined $args->{offset}) {
+        $args->{offset} = 0;
+    }
+
+    my $url = API_QUERY_URL . Plugins::ARDAudiothek::GraphQLQueries::SEARCH;
+    $url =~ s/\$query/$args->{search}/i;
+    $url =~ s/\$offset/$args->{offset}/i;
+    $url =~ s/\$limit/$args->{limit}/i;
+
+    my $adapter = sub {
+        my $content = shift;
+        $content = $content->{data}->{search};
+
+        my $programSets = _itemlistFromJson(
+            $content->{programSets}->{nodes},
+            \&_playlistMetaFromJson
+        );
+
+        my $editorialCategories = _itemlistFromJson(
+            $content->{editorialCategories}->{nodes},
+            \&_categoryFromJson
+        );
+
+        my $editorialCollections = _itemlistFromJson(
+            $content->{editorialCollections}->{nodes},
+            \&_playlistMetaFromJson
+        );
+
+        my $episodes = _itemlistFromJson(
+            $content->{items}->{nodes},
+            \&_episodeFromJson
+        );
+
+        my $searchResults = {
+            programSets => $programSets,
+            editorialCategories => $editorialCategories,
+            editorialCollections => $editorialCollections,
+            episodes => $episodes
+        };
+
+        $callback->($searchResults);
+    };
+    
+    _call($url, $adapter);
+}
+
 sub getDiscover {
     my ($class, $callback, $args) = @_;
 
@@ -140,47 +189,20 @@ sub getEditorialCategoryPlaylists {
     _call($url, $adapter);
 }
 
-sub search {
+sub getOrganizations {
     my ($class, $callback, $args) = @_;
+    my $url = API_QUERY_URL . Plugins::ARDAudiothek::GraphQLQueries::ORGANIZATIONS;
 
-    my $offset = 0;
-    if(defined $args->{offset}) {
-        $offset = $args->{offset};
-    }
-
-    my $url = API_URL . "search/$args->{searchType}?query=$args->{searchWord}&offset=$offset&limit=$args->{limit}";
-
-    my $programSetsAdapter = sub {
+    my $adapter = sub {
         my $content = shift;
-        
-        my $programSetsSearchresult = {
-            programSets => _itemlistFromJson($content->{_embedded}->{"mt:programSets"}, \&_playlistMetaFromJson),
-            numberOfElements => $content->{numberOfElements}
-        };
-            
-        $callback->($programSetsSearchresult);
+
+        my $organizationlist = _itemlistFromJson(
+            $content->{data}->{organizations}->{nodes},
+            \&_organizationFromJson
+        );
+
+        $callback->($organizationlist);
     };
-
-    my $episodesAdapter = sub {
-        my $content = shift;
-        my $episodesSearchresult = {
-            episodes => _itemlistFromJson($content->{_embedded}->{"mt:items"}, \&_episodeFromJson),
-            numberOfElements => $content->{numberOfElements}
-        };
-
-        $callback->($episodesSearchresult);
-    };
-
-    my $adapter;
-    if($args->{searchType} eq 'programsets') {
-        $adapter = $programSetsAdapter;
-    }
-    elsif($args->{searchType} eq 'items') {
-        $adapter = $episodesAdapter;
-    }
-    else {
-        $callback->(undef);
-    }
 
     _call($url, $adapter);
 }
@@ -212,24 +234,6 @@ sub getEditorialCollection {
         my $jsonProgramSet = shift;
         my $programSet = _editorialCollectionFromJson($jsonProgramSet->{data}->{editorialCollection});
         $callback->($programSet);
-    };
-
-    _call($url, $adapter);
-}
-
-sub getOrganizations {
-    my ($class, $callback, $args) = @_;
-    my $url = API_QUERY_URL . Plugins::ARDAudiothek::GraphQLQueries::ORGANIZATIONS;
-
-    my $adapter = sub {
-        my $content = shift;
-
-        my $organizationlist = _itemlistFromJson(
-            $content->{data}->{organizations}->{nodes},
-            \&_organizationFromJson
-        );
-
-        $callback->($organizationlist);
     };
 
     _call($url, $adapter);

@@ -89,6 +89,8 @@ sub homescreen {
     };
 
     $callback->({items => \@items});
+
+    return;
 }
 
 sub search {
@@ -130,6 +132,8 @@ sub search {
             limit  => $serverPrefs->{prefs}->{itemsPerPage}
         }
     );
+
+    return;
 }
 
 sub discover {
@@ -173,6 +177,8 @@ sub discover {
             $callback->({items => \@items});
         }
     );
+
+    return;
 }
 
 sub editorialCategories {
@@ -185,6 +191,8 @@ sub editorialCategories {
             $callback->({items => $items});
         }
     );
+
+    return;
 }
 
 sub editorialCategoryPlaylists {
@@ -225,6 +233,8 @@ sub editorialCategoryPlaylists {
             id => $params->{id}
         }
     );
+
+    return;
 }
 
 sub organizations {
@@ -246,6 +256,8 @@ sub organizations {
             $callback->({items => \@items});
         }
     );
+
+    return;
 }
 
 sub publicationServices {
@@ -331,6 +343,8 @@ sub programSetEpisodes {
             limit => $serverPrefs->{prefs}->{itemsPerPage}
         }
     );
+
+    return;
 }
 
 sub editorialCollectionsToOPML {
@@ -369,6 +383,8 @@ sub collectionEpisodes {
             limit => $serverPrefs->{prefs}->{itemsPerPage}
         }
     );
+
+    return;
 }
 
 sub episodesToOPML {

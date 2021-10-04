@@ -65,13 +65,8 @@ sub explodePlaylist {
 
     my $adapter = sub {
         my $playlist = shift;
-        my @episodeUris;
-
-        for my $episode (@{$playlist->{episodes}}) {
-            push(@episodeUris, 'ardaudiothek://episode/' . $episode->{id});
-        }
-
-        $callback->([@episodeUris]);
+        my $items = Plugins::ARDAudiothek::Plugin::episodesToOPML($playlist->{episodes});
+        $callback->({items => $items});
     };
 
     my $variables = {

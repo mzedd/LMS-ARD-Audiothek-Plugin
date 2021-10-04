@@ -3,10 +3,10 @@
         <title lang="EN">3rd-party repository for installing the ARD Audiothek plugin</title>
     </details>
     <plugins>
-        <plugin name="ARDAudiothek" version="1.2.0" maxTarget="*">
+        <plugin name="ARDAudiothek" version="1.2.1" maxTarget="*">
             <title lang="EN">ARD Audiothek</title>
             <desc lang="EN">Browse and listen to content of the ARD Audiothek.</desc>
-            <changes lang="EN">v1.2.0: The plugin now uses the GraphQL backend of the ARD Audiothek.</changes>
+            <changes lang="EN">v1.2.0: The plugin now uses the GraphQL backend of the ARD Audiothek. v1.2.1: favorite playlists load meta data</changes>
             <url>https://github.com/mzedd/LMS-ARD-Audiothek-Plugin/releases/download/nightly/ARDAudiothek.zip</url>
             <link>https://github.com/mzedd/LMS-ARD-Audiothek-Plugin/</link>
             <creator>Max Zimmermann</creator>

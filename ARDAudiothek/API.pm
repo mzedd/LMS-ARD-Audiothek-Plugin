@@ -77,7 +77,7 @@ sub search {
 
         $callback->($searchResults);
     };
-    
+
     _call($url, $adapter);
 }
 
@@ -216,6 +216,7 @@ sub getProgramSet {
     my $adapter = sub {
         my $jsonProgramSet = shift;
         my $programSet = _playlistFromJson($jsonProgramSet->{data}->{programSet});
+
         $callback->($programSet);
     };
 

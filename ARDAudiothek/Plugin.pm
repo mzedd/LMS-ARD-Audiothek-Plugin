@@ -20,9 +20,10 @@ use strict;
 use base qw(Slim::Plugin::OPMLBased);
 use Slim::Utils::Log;
 use Slim::Utils::Strings qw(string cstring);
-use Slim::Utils::Prefs;
 
 use Plugins::ARDAudiothek::API;
+
+use constant MAX_ITEMS => 1000;
 
 my $log = Slim::Utils::Log->addLogCategory( {
 	category     => 'plugin.ardaudiothek',
@@ -30,7 +31,6 @@ my $log = Slim::Utils::Log->addLogCategory( {
 	description  => 'PLUGIN_ARDAUDIOTHEK_NAME',
 	logGroups    => 'SCANNER',
 } );
-my $serverPrefs = preferences('server');
 
 sub getDisplayName {
     return 'PLUGIN_ARDAUDIOTHEK_NAME'
@@ -95,6 +95,7 @@ sub homescreen {
 
 sub search {
     my ($client, $callback, $args) = @_;
+    my $offset = defined $args->{index} ? $args->{index} : 0;
 
     Plugins::ARDAudiothek::API->search(
         sub {
@@ -129,7 +130,7 @@ sub search {
         },{
             search => $args->{search},
             offset => 0,
-            limit  => $serverPrefs->{prefs}->{itemsPerPage}
+            limit  => MAX_ITEMS
         }
     );
 
@@ -327,20 +328,21 @@ sub programSetsToOPML {
 
 sub programSetEpisodes {
     my ($client, $callback, $args, $params) = @_;
+    my $offset = defined $args->{index} ? $args->{index} : 0;
 
     Plugins::ARDAudiothek::API->getProgramSet(
         sub {
             my $programSet = shift;
 
             my $items = episodesToOPML($programSet->{episodes}); 
-            my $numberOfElements = $programSet->{numberOfElements}; 
- 
-            $callback->({ items => $items, total => $numberOfElements });
+            my $numberOfElements = $programSet->{numberOfElements};
+
+            $callback->({ items => $items, offset => $offset, total => $numberOfElements });
         },
         {
             id => $params->{id},
             offset => 0,
-            limit => $serverPrefs->{prefs}->{itemsPerPage}
+            limit => MAX_ITEMS
         }
     );
 
@@ -367,6 +369,7 @@ sub editorialCollectionsToOPML {
 
 sub collectionEpisodes {
     my ($client, $callback, $args, $params) = @_;
+    my $offset = defined $args->{index} ? $args->{index} : 0;
 
     Plugins::ARDAudiothek::API->getEditorialCollection(
         sub {
@@ -375,12 +378,12 @@ sub collectionEpisodes {
             my $items = episodesToOPML($collection->{episodes});
             my $numberOfElements = $collection->{numberOfElements}; 
            
-            $callback->({ items => $items, total => $numberOfElements });
+            $callback->({ items => $items, offset => $offset, total => $numberOfElements });
         },
         {
             id => $params->{id},
             offset => 0,
-            limit => $serverPrefs->{prefs}->{itemsPerPage}
+            limit => MAX_ITEMS
         }
     );
 

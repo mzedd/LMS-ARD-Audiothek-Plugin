@@ -313,19 +313,18 @@ sub _publicationServiceFromJson {
         )
     };
 
-    # if there is a liveStream - add it
-    if($jsonPublicationService->{permanentLivestreams}->{totalCount} >= 1) {
-        my @liveStreamUrls;
+    # if there are livestreams, add them
+    if($jsonPublicationService->{permanentLivestreams}->{totalCount} > 0) {
+        my @permanentLivestreams;
 
-        for my $liveStream (@{$jsonPublicationService->{permanentLivestreams}->{nodes}}) {
-            push (@liveStreamUrls, $liveStream->{audios}[0]->{url});
+        for my $jsonPermanentLivestream (@{$jsonPublicationService->{permanentLivestreams}->{nodes}}) {
+            push @permanentLivestreams, {
+                title => $jsonPermanentLivestream->{title},
+                imageUrl => $jsonPermanentLivestream->{image}->{url},
+                url => $jsonPermanentLivestream->{audios}[0]->{url}
+            };
         }
-
-        $publicationService->{liveStream} = {
-            name => 'Livestream',
-            url => \@liveStreamUrls,
-            imageUrl => $jsonPublicationService->{image}->{url}
-        };
+        $publicationService->{permanentLivestreams} = \@permanentLivestreams;
     }
 
     return $publicationService;

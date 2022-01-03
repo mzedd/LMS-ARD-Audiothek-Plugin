@@ -267,16 +267,13 @@ sub publicationServices {
 
     for my $publicationService (@{$publicationServices}) {
         my $publicationServiceItems = programSetsToOPML($publicationService->{programSets});
-       
-        # add radio station if there is one
-        if(defined $publicationService->{liveStream}) {
-            my $liveStream = $publicationService->{liveStream};
 
+        # add radio station if there is one
+        if(defined $publicationService->{permanentLivestreams}) {
             unshift @{$publicationServiceItems}, {
-                name => $liveStream->{name},
-                type => 'audio',
-                image => Plugins::ARDAudiothek::API::selectImageFormat($liveStream->{imageUrl}),
-                play => $liveStream->{url}
+                title => 'Livestreams',
+                image => Plugins::ARDAudiothek::API::selectImageFormat($publicationService->{imageUrl}),
+                items => permanentLivestreamsToOPML($publicationService->{permanentLivestreams})
             };
         }
 
@@ -285,6 +282,25 @@ sub publicationServices {
             type => 'link',
             image => Plugins::ARDAudiothek::API::selectImageFormat($publicationService->{imageUrl}),
             items => $publicationServiceItems
+        };
+    }
+
+    return \@items;
+}
+
+sub permanentLivestreamsToOPML {
+    my $permanentLivestreams = shift;
+    my @items;
+
+    for my $permanentLivestream (@{$permanentLivestreams}) {
+        push @items, {
+            name => $permanentLivestream->{title},
+            type => 'audio',
+            favorites_type => 'audio',
+            play => $permanentLivestream->{url},
+            on_select => 'play',
+            image => Plugins::ARDAudiothek::API::selectImageFormat($permanentLivestream->{imageUrl}),
+            url => $permanentLivestream->{url}
         };
     }
 

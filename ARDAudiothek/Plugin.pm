@@ -95,7 +95,6 @@ sub homescreen {
 
 sub search {
     my ($client, $callback, $args) = @_;
-    my $offset = defined $args->{index} ? $args->{index} : 0;
 
     Plugins::ARDAudiothek::API->search(
         sub {
@@ -328,7 +327,6 @@ sub programSetsToOPML {
 
 sub programSetEpisodes {
     my ($client, $callback, $args, $params) = @_;
-    my $offset = defined $args->{index} ? $args->{index} : 0;
 
     Plugins::ARDAudiothek::API->getProgramSet(
         sub {
@@ -337,7 +335,7 @@ sub programSetEpisodes {
             my $items = episodesToOPML($programSet->{episodes}); 
             my $numberOfElements = $programSet->{numberOfElements};
 
-            $callback->({ items => $items, offset => $offset, total => $numberOfElements });
+            $callback->({items => $items, total => $numberOfElements});
         },
         {
             id => $params->{id},
@@ -369,7 +367,6 @@ sub editorialCollectionsToOPML {
 
 sub collectionEpisodes {
     my ($client, $callback, $args, $params) = @_;
-    my $offset = defined $args->{index} ? $args->{index} : 0;
 
     Plugins::ARDAudiothek::API->getEditorialCollection(
         sub {
@@ -378,7 +375,7 @@ sub collectionEpisodes {
             my $items = episodesToOPML($collection->{episodes});
             my $numberOfElements = $collection->{numberOfElements}; 
            
-            $callback->({ items => $items, offset => $offset, total => $numberOfElements });
+            $callback->({items => $items, total => $numberOfElements});
         },
         {
             id => $params->{id},

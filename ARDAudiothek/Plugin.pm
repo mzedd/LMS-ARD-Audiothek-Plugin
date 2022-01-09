@@ -18,11 +18,15 @@ package Plugins::ARDAudiothek::Plugin;
 
 use strict;
 use base qw(Slim::Plugin::OPMLBased);
+
+use Encode qw(encode);
+
 use Slim::Utils::Log;
 use Slim::Utils::Strings qw(string cstring);
-use Slim::Utils::Prefs;
 
 use Plugins::ARDAudiothek::API;
+
+use constant MAX_ITEMS => 1000;
 
 my $log = Slim::Utils::Log->addLogCategory( {
 	category     => 'plugin.ardaudiothek',
@@ -30,7 +34,6 @@ my $log = Slim::Utils::Log->addLogCategory( {
 	description  => 'PLUGIN_ARDAUDIOTHEK_NAME',
 	logGroups    => 'SCANNER',
 } );
-my $serverPrefs = preferences('server');
 
 sub getDisplayName {
     return 'PLUGIN_ARDAUDIOTHEK_NAME'
@@ -96,6 +99,10 @@ sub homescreen {
 sub search {
     my ($client, $callback, $args) = @_;
 
+    if($args->{search}) {
+        $args->{search} = encode('utf8', $args->{search});
+    }
+
     Plugins::ARDAudiothek::API->search(
         sub {
             my $searchResults = shift;
@@ -129,7 +136,7 @@ sub search {
         },{
             search => $args->{search},
             offset => 0,
-            limit  => $serverPrefs->{prefs}->{itemsPerPage}
+            limit  => MAX_ITEMS
         }
     );
 
@@ -333,14 +340,14 @@ sub programSetEpisodes {
             my $programSet = shift;
 
             my $items = episodesToOPML($programSet->{episodes}); 
-            my $numberOfElements = $programSet->{numberOfElements}; 
- 
-            $callback->({ items => $items, total => $numberOfElements });
+            my $numberOfElements = $programSet->{numberOfElements};
+
+            $callback->({items => $items, total => $numberOfElements});
         },
         {
             id => $params->{id},
             offset => 0,
-            limit => $serverPrefs->{prefs}->{itemsPerPage}
+            limit => MAX_ITEMS
         }
     );
 
@@ -375,12 +382,12 @@ sub collectionEpisodes {
             my $items = episodesToOPML($collection->{episodes});
             my $numberOfElements = $collection->{numberOfElements}; 
            
-            $callback->({ items => $items, total => $numberOfElements });
+            $callback->({items => $items, total => $numberOfElements});
         },
         {
             id => $params->{id},
             offset => 0,
-            limit => $serverPrefs->{prefs}->{itemsPerPage}
+            limit => MAX_ITEMS
         }
     );
 

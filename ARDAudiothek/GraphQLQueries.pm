@@ -23,7 +23,7 @@ use constant {
     'fragment item on Item {
       id
       title
-      synopsis
+      summary
       duration
       image {
         url

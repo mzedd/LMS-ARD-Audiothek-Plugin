@@ -18,6 +18,9 @@ package Plugins::ARDAudiothek::Plugin;
 
 use strict;
 use base qw(Slim::Plugin::OPMLBased);
+
+use Encode qw(encode);
+
 use Slim::Utils::Log;
 use Slim::Utils::Strings qw(string cstring);
 
@@ -95,6 +98,10 @@ sub homescreen {
 
 sub search {
     my ($client, $callback, $args) = @_;
+
+    if($args->{search}) {
+        $args->{search} = encode('utf8', $args->{search});
+    }
 
     Plugins::ARDAudiothek::API->search(
         sub {

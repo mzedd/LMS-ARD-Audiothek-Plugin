@@ -347,7 +347,6 @@ sub _playlistFromJson {
     my $jsonPlaylist = shift;
 
     my $playlist = {
-        description => $jsonPlaylist->{synopsis},
         numberOfElements => $jsonPlaylist->{numberOfElements},
         episodes => _itemlistFromJson($jsonPlaylist->{items}->{nodes}, \&_episodeFromJson)
     };
@@ -357,7 +356,6 @@ sub _editorialCollectionFromJson {
     my $jsonPlaylist = shift;
 
     my $playlist = {
-        description => $jsonPlaylist->{synopsis},
         numberOfElements => $jsonPlaylist->{numberOfElements},
         episodes => _itemlistFromJson($jsonPlaylist->{items}->{nodes}, \&_oldEpisodeFromJson)
     };
@@ -371,7 +369,7 @@ sub _episodeFromJson {
         imageUrl => $jsonEpisode->{image}->{url},
         duration => $jsonEpisode->{duration},
         id => $jsonEpisode->{id},
-        description => $jsonEpisode->{synopsis},
+        description => $jsonEpisode->{summary},
         title => $jsonEpisode->{title},
         show => $jsonEpisode->{programSet}->{title}
     };

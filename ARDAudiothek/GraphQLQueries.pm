@@ -185,7 +185,7 @@ use constant {
         id
         title
         numberOfElements
-        items(offset: $offset, first: $limit, filter: {isPublished: {equalTo: true}}) {
+        items(offset: $offset, first: $limit, filter: {isPublished: {equalTo: true}}, , orderBy: PUBLISH_DATE_DESC) {
           nodes {
             ...item
           }

@@ -89,40 +89,41 @@ sub getDiscover {
     my $adapter = sub {
         my $content = shift;
         $content = $content->{data}->{homescreen};
+        my @items;
+ 
+        for my $section (@{$content->{sections}}) {
+            if($section->{type} eq "STAGE") {
+                push (@items, {
+                        title => "Entdecken",
+                        items => _itemlistFromJson($section->{nodes}, \&_episodeFromJson),
+                        type => "episodes"
+                    }
+                );
+                next;
+            }
 
-        my $stageEpisodes = _itemlistFromJson(
-            $content->{sections}[0]->{nodes},
-            \&_episodeFromJson
-        );
-        
-        my $editorialCollections = _itemlistFromJson(
-            $content->{sections}[1]->{nodes},
-            \&_playlistMetaFromJson
-        );
+            if($section->{type} eq "featured_programset") {
+                push (@items, {
+                        title => $section->{title},
+                        items => _itemlistFromJson($section->{nodes}, \&_playlistMetaFromJson),
+                        type => "programSets"
+                    }
+                );
+                next;
+            }
 
-        my $featuredPlaylists = _itemlistFromJson(
-            $content->{sections}[2]->{nodes},
-            \&_playlistMetaFromJson);
+            if($section->{type} eq "GRID_LIST") {
+                push (@items, {
+                        title => $section->{title},
+                        items => _itemlistFromJson($section->{nodes}, \&_playlistMetaFromJson),
+                        type => "editorialCollections"
+                    }
+                );
+                next;
+            }
+        }
 
-        my $mostPlayedEpisodes = _itemlistFromJson(
-            $content->{sections}[3]->{nodes},
-            \&_episodeFromJson
-        );
-
-        my $featuredProgramSets = _itemlistFromJson(
-            $content->{sections}[4]->{nodes},
-            \&_playlistMetaFromJson
-        );
-
-        my $discover = {
-            stageEpisodes => $stageEpisodes,
-            editorialCollections => $editorialCollections,
-            featuredPlaylists => $featuredPlaylists,
-            mostPlayedEpisodes => $mostPlayedEpisodes,
-            featuredProgramSets => $featuredProgramSets
-        };
-
-        $callback->($discover);
+        $callback->(\@items);
     };
 
     _call($url, $adapter);

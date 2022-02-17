@@ -151,35 +151,34 @@ sub discover {
             my $content = shift;
             my @items;
 
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_STAGE'),
-                type => 'link',
-                items => episodesToOPML($content->{stageEpisodes})
-            };
+            for my $section (@{$content}) {
+                if($section->{type} eq "episodes") {
+                    push @items, {
+                        name  => $section->{title},
+                        type  => 'link',
+                        items => episodesToOPML($section->{items})
+                    };
+                    next;
+                }
 
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_OUR_FAVORITES'),
-                type => 'link',
-                items => editorialCollectionsToOPML($content->{editorialCollections}) 
-            };
+                if($section->{type} eq "programSets") {
+                    push @items, {
+                        name  => $section->{title},
+                        type  => 'link',
+                        items => programSetsToOPML($section->{items})
+                    };
+                    next;
+                }
 
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_TOPICS'),
-                type => 'link',
-                items => editorialCollectionsToOPML($content->{featuredPlaylists})
-            };
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_MOSTPLAYED'),
-                type => 'link',
-                items => episodesToOPML($content->{mostPlayedEpisodes})
-            };
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_FEATURED_PROGRAMSETS'),
-                type => 'link',
-                items => programSetsToOPML($content->{featuredProgramSets})
-            };
+                if($section->{type} eq "editorialCollections") {
+                    push @items, {
+                        name  => $section->{title},
+                        type  => 'link',
+                        items => editorialCollectionsToOPML($section->{items})
+                    };
+                    next;
+                }
+            }
 
             $callback->({items => \@items});
         }

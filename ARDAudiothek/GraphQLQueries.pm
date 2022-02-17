@@ -110,6 +110,8 @@ use constant {
     '{
       homescreen {
         sections {
+          title
+          type
           nodes {
             ...item
             ...programSetMeta

@@ -194,7 +194,23 @@ use constant {
         }
       }
     }'
-    .FRAGMENT_ITEM, 
+    .FRAGMENT_ITEM,
+
+    EDITORIAL_COLLECTION => 
+    '{
+      editorialCollection(id: $id) {
+        id
+        title
+        numberOfElements
+        items(limit: $limit, offset: $offset) {
+          nodes {
+            ...item
+          }
+        }
+      }
+    }'
+    .FRAGMENT_ITEM,
+
 
     EPISODE =>
     '{

@@ -217,7 +217,6 @@ sub getProgramSet {
     my $adapter = sub {
         my $jsonProgramSet = shift;
         my $programSet = _playlistFromJson($jsonProgramSet->{data}->{programSet});
-
         $callback->($programSet);
     };
 
@@ -227,9 +226,11 @@ sub getProgramSet {
 sub getEditorialCollection {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_URL . 'graphql/editorialcollections/' . $args->{id} . '?'
-    .'offset=' . $args->{offset} . '&'
-    .'limit=' . $args->{limit};
+    my $url = API_QUERY_URL . replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::EDITORIAL_COLLECTION, $args->{id});
+    $url =~ s/\$limit/$args->{limit}/i;
+    $url =~ s/\$offset/$args->{offset}/i;
+    
+    $log->error($url);
 
     my $adapter = sub {
         my $jsonProgramSet = shift;
@@ -357,7 +358,7 @@ sub _editorialCollectionFromJson {
 
     my $playlist = {
         numberOfElements => $jsonPlaylist->{numberOfElements},
-        episodes => _itemlistFromJson($jsonPlaylist->{items}->{nodes}, \&_oldEpisodeFromJson)
+        episodes => _itemlistFromJson($jsonPlaylist->{items}->{nodes}, \&_episodeFromJson)
     };
 }
 
@@ -370,23 +371,6 @@ sub _episodeFromJson {
         duration => $jsonEpisode->{duration},
         id => $jsonEpisode->{id},
         description => $jsonEpisode->{summary},
-        title => $jsonEpisode->{title},
-        show => $jsonEpisode->{programSet}->{title}
-    };
-
-    return $episode;
-}
-
-# compability
-sub _oldEpisodeFromJson {
-    my $jsonEpisode = shift;
-
-    my $episode = {
-        url => $jsonEpisode->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-        imageUrl => $jsonEpisode->{_links}->{"mt:image"}->{href},
-        duration => $jsonEpisode->{duration},
-        id => $jsonEpisode->{id},
-        description => $jsonEpisode->{synopsis},
         title => $jsonEpisode->{title},
         show => $jsonEpisode->{programSet}->{title}
     };

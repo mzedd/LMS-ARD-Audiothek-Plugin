@@ -171,15 +171,19 @@ use constant {
     '{
       editorialCategory(id: $id) {
         sections {
+          title
+          type
           nodes {
             ...item
             ...programSetMeta
+            ...editorialCollectionMeta
           }
         }
       }
     }'
     .FRAGMENT_ITEM
-    .FRAGMENT_PROGRAMSETMETA,
+    .FRAGMENT_PROGRAMSETMETA
+    .FRAGMENT_EDITORIALCOLLECTIONMETA,
 
     PROGRAM_SET => 
     '{

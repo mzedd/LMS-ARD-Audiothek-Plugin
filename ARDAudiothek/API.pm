@@ -88,42 +88,8 @@ sub getDiscover {
 
     my $adapter = sub {
         my $content = shift;
-        $content = $content->{data}->{homescreen};
-        my @items;
- 
-        for my $section (@{$content->{sections}}) {
-            if($section->{type} eq "STAGE") {
-                push (@items, {
-                        title => "Entdecken",
-                        items => _itemlistFromJson($section->{nodes}, \&_episodeFromJson),
-                        type => "episodes"
-                    }
-                );
-                next;
-            }
-
-            if($section->{type} eq "featured_programset") {
-                push (@items, {
-                        title => $section->{title},
-                        items => _itemlistFromJson($section->{nodes}, \&_playlistMetaFromJson),
-                        type => "programSets"
-                    }
-                );
-                next;
-            }
-
-            if($section->{type} eq "GRID_LIST") {
-                push (@items, {
-                        title => $section->{title},
-                        items => _itemlistFromJson($section->{nodes}, \&_playlistMetaFromJson),
-                        type => "editorialCollections"
-                    }
-                );
-                next;
-            }
-        }
-
-        $callback->(\@items);
+        my $items = _sectionsToLists($content->{data}->{homescreen});
+        $callback->($items);
     };
 
     _call($url, $adapter);
@@ -154,36 +120,8 @@ sub getEditorialCategoryPlaylists {
 
     my $adapter = sub {
         my $content = shift;
-        $content = $content->{data}->{editorialCategory};
-
-        my $mostPlayedEpisodes = _itemlistFromJson(
-            $content->{sections}[0]->{nodes},
-            \&_episodeFromJson
-        );
-
-        my $newestEpisodes = _itemlistFromJson(
-            $content->{sections}[1]->{nodes},
-            \&_episodeFromJson
-        );
-
-        my $featuredProgramSets = _itemlistFromJson(
-            $content->{sections}[2]->{nodes},
-            \&_playlistMetaFromJson
-        );
-
-        my $programSets = _itemlistFromJson(
-            $content->{sections}[3]->{nodes},
-            \&_playlistMetaFromJson
-        );
-
-        my $editorialCategoryPlaylists = {
-            mostPlayedEpisodes => $mostPlayedEpisodes,
-            newestEpisodes => $newestEpisodes,
-            featuredProgramSets => $featuredProgramSets,
-            programSets => $programSets
-        };
-
-        $callback->($editorialCategoryPlaylists);
+        my $items = _sectionsToLists($content->{data}->{editorialCategory});
+        $callback->($items);
     };
 
     _call($url, $adapter);
@@ -258,6 +196,45 @@ sub getEpisode {
 
 sub clearCache {
     $cache->cleanup();
+}
+
+sub _sectionsToLists {
+    my $content = shift;
+    my @items;
+
+    for my $section (@{$content->{sections}}) {
+        if($section->{type} eq "STAGE" or $section->{type} eq "newest_episodes" or $section->{type} eq "most_played") {
+            push (@items, {
+                    title => (defined $section->{title}) ? $section->{title} : "Entdecken",
+                    items => _itemlistFromJson($section->{nodes}, \&_episodeFromJson),
+                    type => "episodes"
+                }
+            );
+            next;
+        }
+
+        if($section->{type} eq "program_sets" or $section->{type} eq "featured_programset") {
+            push (@items, {
+                    title => $section->{title},
+                    items => _itemlistFromJson($section->{nodes}, \&_playlistMetaFromJson),
+                    type => "programSets"
+                }
+            );
+            next;
+        }
+
+        if($section->{type} eq "GRID_LIST") {
+            push (@items, {
+                    title => $section->{title},
+                    items => _itemlistFromJson($section->{nodes}, \&_playlistMetaFromJson),
+                    type => "editorialCollections"
+                }
+            );
+            next;
+        }
+    }
+
+    return \@items;
 }
 
 sub _itemlistFromJson {

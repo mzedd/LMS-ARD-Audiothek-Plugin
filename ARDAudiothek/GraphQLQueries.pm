@@ -110,6 +110,8 @@ use constant {
     '{
       homescreen {
         sections {
+          title
+          type
           nodes {
             ...item
             ...programSetMeta
@@ -169,15 +171,19 @@ use constant {
     '{
       editorialCategory(id: $id) {
         sections {
+          title
+          type
           nodes {
             ...item
             ...programSetMeta
+            ...editorialCollectionMeta
           }
         }
       }
     }'
     .FRAGMENT_ITEM
-    .FRAGMENT_PROGRAMSETMETA,
+    .FRAGMENT_PROGRAMSETMETA
+    .FRAGMENT_EDITORIALCOLLECTIONMETA,
 
     PROGRAM_SET => 
     '{
@@ -185,14 +191,30 @@ use constant {
         id
         title
         numberOfElements
-        items(offset: $offset, first: $limit, filter: {isPublished: {equalTo: true}}, , orderBy: PUBLISH_DATE_DESC) {
+        items(offset: $offset, first: $limit, filter: {isPublished: {equalTo: true}}, orderBy: PUBLISH_DATE_DESC) {
           nodes {
             ...item
           }
         }
       }
     }'
-    .FRAGMENT_ITEM, 
+    .FRAGMENT_ITEM,
+
+    EDITORIAL_COLLECTION => 
+    '{
+      editorialCollection(id: $id) {
+        id
+        title
+        numberOfElements
+        items(limit: $limit, offset: $offset) {
+          nodes {
+            ...item
+          }
+        }
+      }
+    }'
+    .FRAGMENT_ITEM,
+
 
     EPISODE =>
     '{

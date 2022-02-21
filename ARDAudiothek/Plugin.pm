@@ -149,39 +149,8 @@ sub discover {
     Plugins::ARDAudiothek::API->getDiscover(
         sub {
             my $content = shift;
-            my @items;
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_STAGE'),
-                type => 'link',
-                items => episodesToOPML($content->{stageEpisodes})
-            };
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_OUR_FAVORITES'),
-                type => 'link',
-                items => editorialCollectionsToOPML($content->{editorialCollections}) 
-            };
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_TOPICS'),
-                type => 'link',
-                items => editorialCollectionsToOPML($content->{featuredPlaylists})
-            };
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_MOSTPLAYED'),
-                type => 'link',
-                items => episodesToOPML($content->{mostPlayedEpisodes})
-            };
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_FEATURED_PROGRAMSETS'),
-                type => 'link',
-                items => programSetsToOPML($content->{featuredProgramSets})
-            };
-
-            $callback->({items => \@items});
+            my $items = sectionsToOPML($content);
+            $callback->({items => $items});
         }
     );
 
@@ -208,33 +177,9 @@ sub editorialCategoryPlaylists {
 
     Plugins::ARDAudiothek::API->getEditorialCategoryPlaylists(
         sub {
-            my $editorialCategoryPlaylists = shift;
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_MOSTPLAYED'),
-                type => 'link',
-                items => episodesToOPML($editorialCategoryPlaylists->{mostPlayedEpisodes})
-            };
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_NEWEST'),
-                type => 'link',
-                items => episodesToOPML($editorialCategoryPlaylists->{newestEpisodes})
-            };
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_FEATURED_PROGRAMSETS'),
-                type => 'link',
-                items => programSetsToOPML($editorialCategoryPlaylists->{featuredProgramSets})
-            };
-
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_ALL_PROGRAMSETS'),
-                type => 'link',
-                items => programSetsToOPML($editorialCategoryPlaylists->{programSets})
-            };
-
-            $callback->({items => \@items});
+            my $content = shift;
+            my $items = sectionsToOPML($content);
+            $callback->({items => $items});
         },
         {
             id => $params->{id}
@@ -273,16 +218,13 @@ sub publicationServices {
 
     for my $publicationService (@{$publicationServices}) {
         my $publicationServiceItems = programSetsToOPML($publicationService->{programSets});
-       
-        # add radio station if there is one
-        if(defined $publicationService->{liveStream}) {
-            my $liveStream = $publicationService->{liveStream};
 
+        # add radio station if there is one
+        if(defined $publicationService->{permanentLivestreams}) {
             unshift @{$publicationServiceItems}, {
-                name => $liveStream->{name},
-                type => 'audio',
-                image => Plugins::ARDAudiothek::API::selectImageFormat($liveStream->{imageUrl}),
-                play => $liveStream->{url}
+                title => 'Livestreams',
+                image => Plugins::ARDAudiothek::API::selectImageFormat($publicationService->{imageUrl}),
+                items => permanentLivestreamsToOPML($publicationService->{permanentLivestreams})
             };
         }
 
@@ -292,6 +234,61 @@ sub publicationServices {
             image => Plugins::ARDAudiothek::API::selectImageFormat($publicationService->{imageUrl}),
             items => $publicationServiceItems
         };
+    }
+
+    return \@items;
+}
+
+sub permanentLivestreamsToOPML {
+    my $permanentLivestreams = shift;
+    my @items;
+
+    for my $permanentLivestream (@{$permanentLivestreams}) {
+        push @items, {
+            name => $permanentLivestream->{title},
+            type => 'audio',
+            favorites_type => 'audio',
+            play => $permanentLivestream->{url},
+            on_select => 'play',
+            image => Plugins::ARDAudiothek::API::selectImageFormat($permanentLivestream->{imageUrl}),
+            url => $permanentLivestream->{url}
+        };
+    }
+
+    return \@items;
+}
+
+sub sectionsToOPML {
+    my $sections = shift;
+    my @items;
+
+    for my $section (@{$sections}) {
+        if($section->{type} eq "episodes") {
+            push @items, {
+                name  => $section->{title},
+                type  => 'link',
+                items => episodesToOPML($section->{items})
+            };
+            next;
+        }
+
+        if($section->{type} eq "programSets") {
+            push @items, {
+                name  => $section->{title},
+                type  => 'link',
+                items => programSetsToOPML($section->{items})
+            };
+            next;
+        }
+
+        if($section->{type} eq "editorialCollections") {
+            push @items, {
+                name  => $section->{title},
+                type  => 'link',
+                items => editorialCollectionsToOPML($section->{items})
+            };
+            next;
+        }
     }
 
     return \@items;

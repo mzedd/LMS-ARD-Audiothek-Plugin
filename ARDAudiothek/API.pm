@@ -88,41 +88,8 @@ sub getDiscover {
 
     my $adapter = sub {
         my $content = shift;
-        $content = $content->{data}->{homescreen};
-
-        my $stageEpisodes = _itemlistFromJson(
-            $content->{sections}[0]->{nodes},
-            \&_episodeFromJson
-        );
-        
-        my $editorialCollections = _itemlistFromJson(
-            $content->{sections}[1]->{nodes},
-            \&_playlistMetaFromJson
-        );
-
-        my $featuredPlaylists = _itemlistFromJson(
-            $content->{sections}[2]->{nodes},
-            \&_playlistMetaFromJson);
-
-        my $mostPlayedEpisodes = _itemlistFromJson(
-            $content->{sections}[3]->{nodes},
-            \&_episodeFromJson
-        );
-
-        my $featuredProgramSets = _itemlistFromJson(
-            $content->{sections}[4]->{nodes},
-            \&_playlistMetaFromJson
-        );
-
-        my $discover = {
-            stageEpisodes => $stageEpisodes,
-            editorialCollections => $editorialCollections,
-            featuredPlaylists => $featuredPlaylists,
-            mostPlayedEpisodes => $mostPlayedEpisodes,
-            featuredProgramSets => $featuredProgramSets
-        };
-
-        $callback->($discover);
+        my $items = _sectionsToLists($content->{data}->{homescreen});
+        $callback->($items);
     };
 
     _call($url, $adapter);
@@ -153,36 +120,8 @@ sub getEditorialCategoryPlaylists {
 
     my $adapter = sub {
         my $content = shift;
-        $content = $content->{data}->{editorialCategory};
-
-        my $mostPlayedEpisodes = _itemlistFromJson(
-            $content->{sections}[0]->{nodes},
-            \&_episodeFromJson
-        );
-
-        my $newestEpisodes = _itemlistFromJson(
-            $content->{sections}[1]->{nodes},
-            \&_episodeFromJson
-        );
-
-        my $featuredProgramSets = _itemlistFromJson(
-            $content->{sections}[2]->{nodes},
-            \&_playlistMetaFromJson
-        );
-
-        my $programSets = _itemlistFromJson(
-            $content->{sections}[3]->{nodes},
-            \&_playlistMetaFromJson
-        );
-
-        my $editorialCategoryPlaylists = {
-            mostPlayedEpisodes => $mostPlayedEpisodes,
-            newestEpisodes => $newestEpisodes,
-            featuredProgramSets => $featuredProgramSets,
-            programSets => $programSets
-        };
-
-        $callback->($editorialCategoryPlaylists);
+        my $items = _sectionsToLists($content->{data}->{editorialCategory});
+        $callback->($items);
     };
 
     _call($url, $adapter);
@@ -216,7 +155,6 @@ sub getProgramSet {
     my $adapter = sub {
         my $jsonProgramSet = shift;
         my $programSet = _playlistFromJson($jsonProgramSet->{data}->{programSet});
-
         $callback->($programSet);
     };
 
@@ -226,9 +164,11 @@ sub getProgramSet {
 sub getEditorialCollection {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_URL . 'graphql/editorialcollections/' . $args->{id} . '?'
-    .'offset=' . $args->{offset} . '&'
-    .'limit=' . $args->{limit};
+    my $url = API_QUERY_URL . replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::EDITORIAL_COLLECTION, $args->{id});
+    $url =~ s/\$limit/$args->{limit}/i;
+    $url =~ s/\$offset/$args->{offset}/i;
+    
+    $log->error($url);
 
     my $adapter = sub {
         my $jsonProgramSet = shift;
@@ -256,6 +196,45 @@ sub getEpisode {
 
 sub clearCache {
     $cache->cleanup();
+}
+
+sub _sectionsToLists {
+    my $content = shift;
+    my @items;
+
+    for my $section (@{$content->{sections}}) {
+        if($section->{type} eq "STAGE" or $section->{type} eq "newest_episodes" or $section->{type} eq "most_played") {
+            push (@items, {
+                    title => (defined $section->{title}) ? $section->{title} : "Entdecken",
+                    items => _itemlistFromJson($section->{nodes}, \&_episodeFromJson),
+                    type => "episodes"
+                }
+            );
+            next;
+        }
+
+        if($section->{type} eq "program_sets" or $section->{type} eq "featured_programset") {
+            push (@items, {
+                    title => $section->{title},
+                    items => _itemlistFromJson($section->{nodes}, \&_playlistMetaFromJson),
+                    type => "programSets"
+                }
+            );
+            next;
+        }
+
+        if($section->{type} eq "GRID_LIST") {
+            push (@items, {
+                    title => $section->{title},
+                    items => _itemlistFromJson($section->{nodes}, \&_playlistMetaFromJson),
+                    type => "editorialCollections"
+                }
+            );
+            next;
+        }
+    }
+
+    return \@items;
 }
 
 sub _itemlistFromJson {
@@ -313,19 +292,18 @@ sub _publicationServiceFromJson {
         )
     };
 
-    # if there is a liveStream - add it
-    if($jsonPublicationService->{permanentLivestreams}->{totalCount} >= 1) {
-        my @liveStreamUrls;
+    # if there are livestreams, add them
+    if($jsonPublicationService->{permanentLivestreams}->{totalCount} > 0) {
+        my @permanentLivestreams;
 
-        for my $liveStream (@{$jsonPublicationService->{permanentLivestreams}->{nodes}}) {
-            push (@liveStreamUrls, $liveStream->{audios}[0]->{url});
+        for my $jsonPermanentLivestream (@{$jsonPublicationService->{permanentLivestreams}->{nodes}}) {
+            push @permanentLivestreams, {
+                title => $jsonPermanentLivestream->{title},
+                imageUrl => $jsonPermanentLivestream->{image}->{url},
+                url => $jsonPermanentLivestream->{audios}[0]->{url}
+            };
         }
-
-        $publicationService->{liveStream} = {
-            name => 'Livestream',
-            url => \@liveStreamUrls,
-            imageUrl => $jsonPublicationService->{image}->{url}
-        };
+        $publicationService->{permanentLivestreams} = \@permanentLivestreams;
     }
 
     return $publicationService;
@@ -357,7 +335,7 @@ sub _editorialCollectionFromJson {
 
     my $playlist = {
         numberOfElements => $jsonPlaylist->{numberOfElements},
-        episodes => _itemlistFromJson($jsonPlaylist->{items}->{nodes}, \&_oldEpisodeFromJson)
+        episodes => _itemlistFromJson($jsonPlaylist->{items}->{nodes}, \&_episodeFromJson)
     };
 }
 
@@ -370,23 +348,6 @@ sub _episodeFromJson {
         duration => $jsonEpisode->{duration},
         id => $jsonEpisode->{id},
         description => $jsonEpisode->{summary},
-        title => $jsonEpisode->{title},
-        show => $jsonEpisode->{programSet}->{title}
-    };
-
-    return $episode;
-}
-
-# compability
-sub _oldEpisodeFromJson {
-    my $jsonEpisode = shift;
-
-    my $episode = {
-        url => $jsonEpisode->{_links}->{"mt:bestQualityPlaybackUrl"}->{href},
-        imageUrl => $jsonEpisode->{_links}->{"mt:image"}->{href},
-        duration => $jsonEpisode->{duration},
-        id => $jsonEpisode->{id},
-        description => $jsonEpisode->{synopsis},
         title => $jsonEpisode->{title},
         show => $jsonEpisode->{programSet}->{title}
     };

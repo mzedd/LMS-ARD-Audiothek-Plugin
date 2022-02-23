@@ -168,12 +168,10 @@ sub getEditorialCollection {
     $url =~ s/\$limit/$args->{limit}/i;
     $url =~ s/\$offset/$args->{offset}/i;
     
-    $log->error($url);
-
     my $adapter = sub {
-        my $jsonProgramSet = shift;
-        my $programSet = _editorialCollectionFromJson($jsonProgramSet->{data}->{editorialCollection});
-        $callback->($programSet);
+        my $jsonEditorialCollection = shift;
+        my $editorialCollection = _playlistFromJson($jsonProgramSet->{data}->{editorialCollection});
+        $callback->($editorialCollection);
     };
 
     _call($url, $adapter);
@@ -322,15 +320,6 @@ sub _playlistMetaFromJson {
 }
 
 sub _playlistFromJson {
-    my $jsonPlaylist = shift;
-
-    my $playlist = {
-        numberOfElements => $jsonPlaylist->{numberOfElements},
-        episodes => _itemlistFromJson($jsonPlaylist->{items}->{nodes}, \&_episodeFromJson)
-    };
-}
-
-sub _editorialCollectionFromJson {
     my $jsonPlaylist = shift;
 
     my $playlist = {

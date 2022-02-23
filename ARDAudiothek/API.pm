@@ -170,7 +170,7 @@ sub getEditorialCollection {
     
     my $adapter = sub {
         my $jsonEditorialCollection = shift;
-        my $editorialCollection = _playlistFromJson($jsonProgramSet->{data}->{editorialCollection});
+        my $editorialCollection = _playlistFromJson($jsonEditorialCollection->{data}->{editorialCollection});
         $callback->($editorialCollection);
     };
 

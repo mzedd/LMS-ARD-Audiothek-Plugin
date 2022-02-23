@@ -339,7 +339,7 @@ sub programSetEpisodes {
             my $items = episodesToOPML($programSet->{episodes}); 
             my $numberOfElements = $programSet->{numberOfElements};
 
-            $callback->({items => $items, total => $numberOfElements});
+            $callback->({items => $items});
         },
         {
             id => $params->{id},
@@ -375,11 +375,11 @@ sub collectionEpisodes {
     Plugins::ARDAudiothek::API->getEditorialCollection(
         sub {
             my $collection = shift;
-
+            
             my $items = episodesToOPML($collection->{episodes});
-            my $numberOfElements = $collection->{numberOfElements}; 
-           
-            $callback->({items => $items, total => $numberOfElements});
+            my $numberOfElements = $collection->{numberOfElements};
+
+            $callback->({items => $items});
         },
         {
             id => $params->{id},

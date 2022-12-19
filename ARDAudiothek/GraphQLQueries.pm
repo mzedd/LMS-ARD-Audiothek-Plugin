@@ -43,6 +43,7 @@ use constant {
       image {
         url
       }
+      numberOfElements
     }',
 
     FRAGMENT_PERMANENTLIVESTREAM =>
@@ -72,6 +73,7 @@ use constant {
       image {
         url
       }
+      numberOfElements
     }'
 };
 

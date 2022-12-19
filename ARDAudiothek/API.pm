@@ -134,6 +134,9 @@ sub getOrganizations {
     my $adapter = sub {
         my $content = shift;
 
+        # remove the last 7 elements, because they contain no content
+        splice(@{$content->{data}->{organizations}->{nodes}}, 14);
+
         my $organizationlist = _itemlistFromJson(
             $content->{data}->{organizations}->{nodes},
             \&_organizationFromJson
@@ -245,7 +248,10 @@ sub _itemlistFromJson {
     }
     else {
         for my $jsonItem (@{$jsonItemlist}) {
-            push (@itemlist, $itemFromJson->($jsonItem));
+            my $item = $itemFromJson->($jsonItem);
+            if(defined $item) {
+                push (@itemlist, $item);
+            }
         }
     }
 
@@ -309,6 +315,10 @@ sub _publicationServiceFromJson {
 
 sub _playlistMetaFromJson {
     my $jsonPlaylist = shift;
+
+    if($jsonPlaylist->{numberOfElements} == 0) {
+        return undef;
+    }
 
     my $playlist = {
         imageUrl => $jsonPlaylist->{image}->{url},

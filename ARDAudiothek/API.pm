@@ -250,7 +250,10 @@ sub _itemlistFromJson {
     }
     else {
         for my $jsonItem (@{$jsonItemlist}) {
-            push (@itemlist, $itemFromJson->($jsonItem));
+            my $item = $itemFromJson->($jsonItem);
+            if(defined $item) {
+                push (@itemlist, $item);
+            }
         }
     }
 
@@ -314,6 +317,10 @@ sub _publicationServiceFromJson {
 
 sub _playlistMetaFromJson {
     my $jsonPlaylist = shift;
+
+    if($jsonPlaylist->{numberOfElements} == 0) {
+        return undef;
+    }
 
     my $playlist = {
         imageUrl => $jsonPlaylist->{image}->{url},

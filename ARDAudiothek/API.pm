@@ -285,7 +285,7 @@ sub _publicationServiceFromJson {
 
     my $publicationService = {
         name => $jsonPublicationService->{title},
-        imageUrl => $jsonPublicationService->{image}->{url},
+        imageUrl => $jsonPublicationService->{image}->{url1X1},
         programSets => _itemlistFromJson(
             $jsonPublicationService->{programSets}->{nodes},
             \&_playlistMetaFromJson
@@ -299,7 +299,7 @@ sub _publicationServiceFromJson {
         for my $jsonPermanentLivestream (@{$jsonPublicationService->{permanentLivestreams}->{nodes}}) {
             push @permanentLivestreams, {
                 title => $jsonPermanentLivestream->{title},
-                imageUrl => $jsonPermanentLivestream->{image}->{url},
+                imageUrl => $jsonPermanentLivestream->{image}->{url1X1},
                 url => $jsonPermanentLivestream->{audios}[0]->{url}
             };
         }
@@ -313,7 +313,7 @@ sub _playlistMetaFromJson {
     my $jsonPlaylist = shift;
 
     my $playlist = {
-        imageUrl => $jsonPlaylist->{image}->{url},
+        imageUrl => $jsonPlaylist->{image}->{url1X1},
         title => $jsonPlaylist->{title},
         id => $jsonPlaylist->{id}
     };
@@ -344,7 +344,7 @@ sub _episodeFromJson {
 
     my $episode = {
         url => $jsonEpisode->{audios}[0]->{url},
-        imageUrl => $jsonEpisode->{image}->{url},
+        imageUrl => $jsonEpisode->{image}->{url1X1},
         duration => $jsonEpisode->{duration},
         id => $jsonEpisode->{id},
         description => $jsonEpisode->{summary},

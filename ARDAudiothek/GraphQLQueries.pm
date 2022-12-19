@@ -26,7 +26,7 @@ use constant {
       summary
       duration
       image {
-        url
+        url1X1
       }
       audios {
         url
@@ -41,7 +41,7 @@ use constant {
       id
       title
       image {
-        url
+        url1X1
       }
     }',
 
@@ -49,7 +49,7 @@ use constant {
     'fragment permanentLivestreams on PermanentLivestream {
       title
       image {
-        url
+        url1X1
       }
       audios {
         url
@@ -136,7 +136,7 @@ use constant {
             nodes {
               title
               image {
-                url
+                url1X1
               }
               permanentLivestreams {
                 totalCount

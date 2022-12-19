@@ -134,6 +134,9 @@ sub getOrganizations {
     my $adapter = sub {
         my $content = shift;
 
+        # remove the last 7 elements, because they contain no content
+        splice(@{$content->{data}->{organizations}->{nodes}}, 14);
+
         my $organizationlist = _itemlistFromJson(
             $content->{data}->{organizations}->{nodes},
             \&_organizationFromJson

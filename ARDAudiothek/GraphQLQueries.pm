@@ -145,7 +145,7 @@ use constant {
                   ...permanentLivestreams
                 }
               }
-              programSets {
+              programSets (filter: {numberOfElements: {greaterThan: 0 } } ) {
                 nodes {
                   ...programSetMeta
                 }

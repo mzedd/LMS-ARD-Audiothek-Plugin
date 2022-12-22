@@ -128,6 +128,7 @@ use constant {
     '{
       organizations {
         nodes {
+	  rowId
           title
           image {
             url

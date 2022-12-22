@@ -132,8 +132,9 @@ use constant {
           image {
             url
           }
-          publicationServicesByOrganizationName {
-            nodes {
+          publicationServicesByOrganizationName (filter: { numberOfElements: { greaterThan: 0 } } ) {
+            numberOfElements
+	    nodes {
               title
               image {
                 url

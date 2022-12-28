@@ -130,12 +130,14 @@ use constant {
     '{
       organizations {
         nodes {
+	  rowId
           title
           image {
             url
           }
-          publicationServicesByOrganizationName {
-            nodes {
+          publicationServicesByOrganizationName (filter: { numberOfElements: { greaterThan: 0 } } ) {
+            numberOfElements
+	    nodes {
               title
               image {
                 url1X1
@@ -146,7 +148,7 @@ use constant {
                   ...permanentLivestreams
                 }
               }
-              programSets {
+              programSets (filter: {numberOfElements: {greaterThan: 0 } } ) {
                 nodes {
                   ...programSetMeta
                 }

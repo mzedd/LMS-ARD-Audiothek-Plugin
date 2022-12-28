@@ -130,14 +130,13 @@ use constant {
     '{
       organizations {
         nodes {
-	  rowId
           title
           image {
             url
           }
           publicationServicesByOrganizationName (filter: { numberOfElements: { greaterThan: 0 } } ) {
             numberOfElements
-	    nodes {
+	        nodes {
               title
               image {
                 url1X1

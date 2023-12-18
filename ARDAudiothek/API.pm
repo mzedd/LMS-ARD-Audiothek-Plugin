@@ -356,7 +356,7 @@ sub _episodeFromJson {
 
 sub selectImageFormat {
     my $imageUrl = shift;
-    my $thumbnailSize = 2.0 * $serverPrefs->{prefs}->{thumbSize};
+    my $thumbnailSize = 10.0 * $serverPrefs->{prefs}->{thumbSize};
 
     $imageUrl =~ s/{ratio}/1x1/i; # for compability
     $imageUrl =~ s/16x9/1x1/i;

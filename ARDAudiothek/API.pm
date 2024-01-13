@@ -204,7 +204,13 @@ sub _sectionsToLists {
     my @items;
 
     for my $section (@{$content->{sections}}) {
-        if($section->{type} eq "STAGE" or $section->{type} eq "newest_episodes" or $section->{type} eq "most_played") {
+        # filter out sections without nodes
+        my $numberOfElements = @{$section->{nodes}};
+        if($numberOfElements eq 0) {
+            next;
+        }
+
+        if($section->{type} eq "STAGE" or $section->{type} eq "newest_episodes" or $section->{type} eq "most_played" or $section->{type} eq "featured_item") {
             push (@items, {
                     title => (defined $section->{title}) ? $section->{title} : "Entdecken",
                     items => _itemlistFromJson($section->{nodes}, \&_episodeFromJson),

@@ -46,6 +46,23 @@ use constant {
       numberOfElements
     }',
 
+    FRAGMENT_EVENTLIVESTREAM =>
+    'fragment eventLivestream on EventLivestream {
+      id
+      title
+      summary
+      duration
+      image {
+        url1X1
+      }
+      audios {
+        url
+      }
+      programSet {
+        title
+      }
+    }',
+
     FRAGMENT_PERMANENTLIVESTREAM =>
     'fragment permanentLivestreams on PermanentLivestream {
       title
@@ -116,6 +133,7 @@ use constant {
           type
           nodes {
             ...item
+            ...eventLivestream
             ...programSetMeta
             ...editorialCollectionMeta
           }
@@ -123,6 +141,7 @@ use constant {
       }
     }'
     .FRAGMENT_ITEM
+    .FRAGMENT_EVENTLIVESTREAM
     .FRAGMENT_PROGRAMSETMETA
     .FRAGMENT_EDITORIALCOLLECTIONMETA,
 
@@ -177,6 +196,7 @@ use constant {
           type
           nodes {
             ...item
+            ...eventLivestream
             ...programSetMeta
             ...editorialCollectionMeta
           }
@@ -184,6 +204,7 @@ use constant {
       }
     }'
     .FRAGMENT_ITEM
+    .FRAGMENT_EVENTLIVESTREAM
     .FRAGMENT_PROGRAMSETMETA
     .FRAGMENT_EDITORIALCOLLECTIONMETA,
 

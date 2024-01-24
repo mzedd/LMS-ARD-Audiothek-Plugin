@@ -74,19 +74,19 @@ sub homescreen {
     };
 
     push @items, {
-        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_DISCOVER'),
+        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_START'),
         type => 'link',
         url => \&discover
     };
 
     push @items, {
-        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_ORGANIZATIONS'),
+        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_RADIO'),
         type => 'link',
         url => \&organizations
     };
     
     push @items, {
-        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES'),
+        name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_PODCASTS'),
         type => 'link',
         url => \&editorialCategories
     };

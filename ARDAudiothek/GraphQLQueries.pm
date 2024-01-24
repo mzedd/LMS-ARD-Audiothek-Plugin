@@ -78,9 +78,6 @@ use constant {
     'fragment editorialCategoryMeta on EditorialCategory {
       id
       title
-      image {
-        url
-      }
     }',
 
     FRAGMENT_EDITORIALCOLLECTIONMETA =>
@@ -131,11 +128,13 @@ use constant {
         sections {
           title
           type
+          nodeTypes
           nodes {
             ...item
             ...eventLivestream
             ...programSetMeta
             ...editorialCollectionMeta
+            ...editorialCategoryMeta
           }
         }
       }
@@ -143,7 +142,8 @@ use constant {
     .FRAGMENT_ITEM
     .FRAGMENT_EVENTLIVESTREAM
     .FRAGMENT_PROGRAMSETMETA
-    .FRAGMENT_EDITORIALCOLLECTIONMETA,
+    .FRAGMENT_EDITORIALCOLLECTIONMETA
+    .FRAGMENT_EDITORIALCATEGORYMETA,
 
     ORGANIZATIONS =>
     '{

@@ -230,6 +230,16 @@ sub _sectionsToLists {
             next;
         }
 
+        if($section->{nodeTypes}[0] eq "EditorialCategory") {
+            push (@items, {
+                    title => $section->{title},
+                    items => _itemlistFromJson($section->{nodes}, \&_categoryFromJson),
+                    type => "editorialCategories"
+                }
+            );
+            next;
+        }
+
         if($section->{type} eq "GRID_LIST") {
             push (@items, {
                     title => $section->{title},

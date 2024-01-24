@@ -281,6 +281,15 @@ sub sectionsToOPML {
             next;
         }
 
+        if($section->{type} eq "editorialCategories") {
+            push @items, {
+                name  => $section->{title},
+                type  => 'link',
+                items => editorialCategoriesToOPML($section->{items})
+            };
+            next;
+        }
+
         if($section->{type} eq "editorialCollections") {
             push @items, {
                 name  => $section->{title},
@@ -302,7 +311,6 @@ sub editorialCategoriesToOPML {
         push @items, {
             name => $editorialCategory->{title},
             type => 'link',
-            image => Plugins::ARDAudiothek::API::selectImageFormat($editorialCategory->{imageUrl}),
             url => \&editorialCategoryPlaylists,
             passthrough => [{id => $editorialCategory->{id}}]
         };

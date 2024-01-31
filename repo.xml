@@ -3,14 +3,14 @@
         <title lang="EN">3rd-party repository for installing the ARD Audiothek plugin</title>
     </details>
     <plugins>
-        <plugin name="ARDAudiothek" version="1.3.1" maxTarget="*">
+        <plugin name="ARDAudiothek" version="1.3.2" maxTarget="*">
             <title lang="EN">ARD Audiothek</title>
             <desc lang="EN">Browse and listen to content of the ARD Audiothek.</desc>
-            <changes lang="EN">v1.3.1: Small fixes due to lists without content.</changes>
+            <changes lang="EN">v1.3.2: Bugfixes and increased image resolution.</changes>
             <url>https://github.com/mzedd/LMS-ARD-Audiothek-Plugin/releases/download/nightly/ARDAudiothek.zip</url>
             <link>https://github.com/mzedd/LMS-ARD-Audiothek-Plugin/</link>
             <creator>Max Zimmermann</creator>
-            <email>software@maxzimmermann.xyz</email>
+            <email>mz.max.zimmermann@gmail.com</email>
             <sha>checksum</sha>
         </plugin>
     </plugins>

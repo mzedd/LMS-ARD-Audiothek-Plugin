@@ -218,9 +218,10 @@ sub _sectionsToLists {
                 }
             );
             next;
-
+        }
+        
         # exclude sections without a title from our list
-        }if($section->{title} eq "") {
+        if($section->{title} eq "") {
               next;
         }
         

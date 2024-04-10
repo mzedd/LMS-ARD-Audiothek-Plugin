@@ -27,7 +27,7 @@ jobs:
           draft: false
           prerelease: true
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4.1.1
       - run: zip -r ARDAudiothek.zip ARDAudiothek
       - name: Upload ZIP file
         id: upload-zip-file

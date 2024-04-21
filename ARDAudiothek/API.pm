@@ -219,12 +219,7 @@ sub _sectionsToLists {
             );
             next;
         }
-        
-        # exclude sections without a title from our list
-        if($section->{title} eq "") {
-              next;
-        }
-        
+
         if($section->{type} eq "program_sets" or $section->{type} eq "featured_programset") {
             push (@items, {
                     title => $section->{title},

@@ -109,7 +109,7 @@ sub search {
             my @items;
  
             push @items, {
-                name  => cstring($client, 'PLUGIN_ARDAUDIOTHEK_PROGRAMSETS'),
+                name  => cstring($client, 'PLUGIN_ARDAUDIOTHEK_PODCASTS'),
                 type  => 'link',
                 items => programSetsToOPML($searchResults->{programSets})
             };

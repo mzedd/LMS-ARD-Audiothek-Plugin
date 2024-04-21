@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Delete nightly release
-        uses: dev-drprasad/delete-tag-and-release@v0.2.0
+        uses: dev-drprasad/delete-tag-and-release@v1.1
         with:
           delete_release: true
           tag_name: nightly
@@ -27,7 +27,7 @@ jobs:
           draft: false
           prerelease: true
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4.1.1
       - run: zip -r ARDAudiothek.zip ARDAudiothek
       - name: Upload ZIP file
         id: upload-zip-file

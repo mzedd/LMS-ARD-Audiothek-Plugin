@@ -18,7 +18,7 @@ package Plugins::ARDAudiothek::API;
 
 use strict;
 
-use JSON::XS::VersionOneAndTwo;
+use JSON::XS;
 use Digest::MD5 qw(md5_hex);
 
 use Slim::Utils::Log;
@@ -413,7 +413,7 @@ sub _call {
         sub {
             my $response = shift;
 
-            my $content = eval { from_json($response->content) }; 
+            my $content = eval { decode_json($response->content) };
             $cache->set($cacheKey, $content, CACHE_TTL_IN_S);
 
             $callback->($content);

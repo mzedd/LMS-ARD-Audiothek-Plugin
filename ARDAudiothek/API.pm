@@ -191,8 +191,9 @@ sub getEpisode {
         $callback->(_episodeFromJson($jsonEpisode->{data}->{item}));
     };
 
-    my $cached = _call($url, $adapter);
-    return _episodeFromJson($cached->{data}->{item});
+    _call($url, $adapter);
+
+    return;
 }
 
 sub clearCache {

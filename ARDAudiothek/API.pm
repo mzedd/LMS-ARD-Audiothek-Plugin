@@ -27,8 +27,7 @@ use Slim::Utils::Prefs;
 
 use Plugins::ARDAudiothek::GraphQLQueries;
 
-use constant API_URL => 'https://api.ardaudiothek.de/';
-use constant API_QUERY_URL => API_URL . 'graphql?query=';
+use constant GRAPHQL_API_URL => 'https://api.ardaudiothek.de/graphql?query=';
 use constant TIMEOUT_IN_S => 20;
 use constant CACHE_TTL_IN_S => 1 * 3600; # cache one hour
 
@@ -39,7 +38,7 @@ my $serverPrefs = preferences('server');
 sub search {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_QUERY_URL . Plugins::ARDAudiothek::GraphQLQueries::SEARCH;
+    my $url = GRAPHQL_API_URL . Plugins::ARDAudiothek::GraphQLQueries::SEARCH;
     $url =~ s/\$query/$args->{search}/i;
     $url =~ s/\$offset/$args->{offset}/i;
     $url =~ s/\$limit/$args->{limit}/i;
@@ -84,7 +83,7 @@ sub search {
 sub getDiscover {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_QUERY_URL . Plugins::ARDAudiothek::GraphQLQueries::DISCOVER;
+    my $url = GRAPHQL_API_URL . Plugins::ARDAudiothek::GraphQLQueries::DISCOVER;
 
     my $adapter = sub {
         my $content = shift;
@@ -97,7 +96,7 @@ sub getDiscover {
 
 sub getEditorialCategories {
     my ($class, $callback, $args) = @_;
-    my $url = API_QUERY_URL . Plugins::ARDAudiothek::GraphQLQueries::EDITORIAL_CATEGORIES;
+    my $url = GRAPHQL_API_URL . Plugins::ARDAudiothek::GraphQLQueries::EDITORIAL_CATEGORIES;
 
     my $adapter = sub {
         my $content = shift;
@@ -115,7 +114,7 @@ sub getEditorialCategories {
 
 sub getEditorialCategoryPlaylists {
     my ($class, $callback, $args) = @_;
-    my $url = API_QUERY_URL .
+    my $url = GRAPHQL_API_URL .
         replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::EDITORIAL_CATEGORY_PLAYLISTS, $args->{id});
 
     my $adapter = sub {
@@ -129,7 +128,7 @@ sub getEditorialCategoryPlaylists {
 
 sub getOrganizations {
     my ($class, $callback, $args) = @_;
-    my $url = API_QUERY_URL . Plugins::ARDAudiothek::GraphQLQueries::ORGANIZATIONS;
+    my $url = GRAPHQL_API_URL . Plugins::ARDAudiothek::GraphQLQueries::ORGANIZATIONS;
 
     my $adapter = sub {
         my $content = shift;
@@ -151,7 +150,7 @@ sub getOrganizations {
 sub getProgramSet {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_QUERY_URL . replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::PROGRAM_SET, $args->{id});
+    my $url = GRAPHQL_API_URL . replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::PROGRAM_SET, $args->{id});
     $url =~ s/\$offset/$args->{offset}/i;
     $url =~ s/\$limit/$args->{limit}/i;
 
@@ -167,7 +166,7 @@ sub getProgramSet {
 sub getEditorialCollection {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_QUERY_URL . replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::EDITORIAL_COLLECTION, $args->{id});
+    my $url = GRAPHQL_API_URL . replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::EDITORIAL_COLLECTION, $args->{id});
     $url =~ s/\$limit/$args->{limit}/i;
     $url =~ s/\$offset/$args->{offset}/i;
 
@@ -183,7 +182,7 @@ sub getEditorialCollection {
 sub getEpisode {
     my ($class, $callback, $args) = @_;
 
-    my $url = API_QUERY_URL . replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::EPISODE, $args->{id});
+    my $url = GRAPHQL_API_URL . replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::EPISODE, $args->{id});
 
     my $adapter = sub {
         my $jsonEpisode = shift;

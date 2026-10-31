@@ -2,23 +2,23 @@ package Plugins::ARDAudiothek::API;
 
 # ARD Audiothek Plugin for the Logitech Media Server (LMS)
 # Copyright (C) 2021  Max Zimmermann  software@maxzimmermann.xyz
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use strict;
 
-use JSON::XS::VersionOneAndTwo;
+use JSON::XS;
 use Digest::MD5 qw(md5_hex);
 
 use Slim::Utils::Log;
@@ -106,7 +106,7 @@ sub getEditorialCategories {
             $content->{data}->{editorialCategories}->{nodes},
             \&_categoryFromJson
         );
-        
+
         $callback->($categorylist);
     };
 
@@ -170,7 +170,7 @@ sub getEditorialCollection {
     my $url = API_QUERY_URL . replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::EDITORIAL_COLLECTION, $args->{id});
     $url =~ s/\$limit/$args->{limit}/i;
     $url =~ s/\$offset/$args->{offset}/i;
-    
+
     my $adapter = sub {
         my $jsonEditorialCollection = shift;
         my $editorialCollection = _playlistFromJson($jsonEditorialCollection->{data}->{editorialCollection});
@@ -184,7 +184,7 @@ sub getEpisode {
     my ($class, $callback, $args) = @_;
 
     my $url = API_QUERY_URL . replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::EPISODE, $args->{id});
-    
+
     my $adapter = sub {
         my $jsonEpisode = shift;
 
@@ -212,45 +212,45 @@ sub _sectionsToLists {
 
         if($section->{type} eq "STAGE" or $section->{type} eq "newest_episodes" or $section->{type} eq "most_played" or $section->{type} eq "featured_item") {
             push (@items, {
-                    title => (defined $section->{title}) ? $section->{title} : "Entdecken",
-                    items => _itemlistFromJson($section->{nodes}, \&_episodeFromJson),
-                    type => "episodes"
-                }
+                title => (defined $section->{title}) ? $section->{title} : "Entdecken",
+                items => _itemlistFromJson($section->{nodes}, \&_episodeFromJson),
+                type => "episodes"
+            }
             );
             next;
         }
-        
+
         # exclude sections without a title from our list
         if($section->{title} eq "") {
-              next;
+            next;
         }
-        
+
         if($section->{type} eq "program_sets" or $section->{type} eq "featured_programset") {
             push (@items, {
-                    title => $section->{title},
-                    items => _itemlistFromJson($section->{nodes}, \&_playlistMetaFromJson),
-                    type => "programSets"
-                }
+                title => $section->{title},
+                items => _itemlistFromJson($section->{nodes}, \&_playlistMetaFromJson),
+                type => "programSets"
+            }
             );
             next;
         }
 
         if($section->{nodeTypes}[0] eq "EditorialCategory") {
             push (@items, {
-                    title => $section->{title},
-                    items => _itemlistFromJson($section->{nodes}, \&_categoryFromJson),
-                    type => "editorialCategories"
-                }
+                title => $section->{title},
+                items => _itemlistFromJson($section->{nodes}, \&_categoryFromJson),
+                type => "editorialCategories"
+            }
             );
             next;
         }
 
         if($section->{type} eq "GRID_LIST") {
             push (@items, {
-                    title => $section->{title},
-                    items => _itemlistFromJson($section->{nodes}, \&_playlistMetaFromJson),
-                    type => "editorialCollections"
-                }
+                title => $section->{title},
+                items => _itemlistFromJson($section->{nodes}, \&_playlistMetaFromJson),
+                type => "editorialCollections"
+            }
             );
             next;
         }
@@ -388,19 +388,19 @@ sub selectImageFormat {
 
 sub replaceIdInQuery {
     my ($query, $id) = @_;
-    
+
     $query =~ s/\$id/$id/i;
-    
+
     return $query;
 }
 
 # low level api call
-# caching is inspired by 
+# caching is inspired by
 # https://forums.slimdevices.com/showthread.php?104217-Menu-handling-problem&p=828666&viewfull=1 and
 # https://github.com/philippe44/LMS-YouTube/blob/master/plugin/API.pm#L140
 sub _call {
     my ($url, $callback) = @_;
-    
+
     my $cacheKey = md5_hex($url);
 
     if($cacheKey && (my $cached = $cache->get($cacheKey))) {
@@ -413,7 +413,7 @@ sub _call {
         sub {
             my $response = shift;
 
-            my $content = eval { from_json($response->content) }; 
+            my $content = eval { decode_json($response->content) };
             $cache->set($cacheKey, $content, CACHE_TTL_IN_S);
 
             $callback->($content);

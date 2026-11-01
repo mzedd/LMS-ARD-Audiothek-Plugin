@@ -329,7 +329,7 @@ sub programSetsToOPML {
             type => 'playlist',
             image => Plugins::ARDAudiothek::API::selectImageFormat($programSet->{imageUrl}),
             url => \&programSetEpisodes,
-            favorites_url => 'ardaudiothek://programset/' . $programSet->{id},
+            favorites_url => 'ardaudiothek://' . $programSet->{id},
             passthrough => [{id => $programSet->{id}}]
        };
     }
@@ -369,7 +369,7 @@ sub editorialCollectionsToOPML {
             type => 'playlist',
             image => Plugins::ARDAudiothek::API::selectImageFormat($collection->{imageUrl}),
             url => \&collectionEpisodes,
-            favorites_url => 'ardaudiothek://collection/' . $collection->{id},
+            favorites_url => 'ardaudiothek://' . $collection->{id},
             passthrough => [{id => $collection->{id}}]
         };
     }
@@ -408,7 +408,7 @@ sub episodesToOPML {
             name => $episode->{title},
             type => 'audio',
             favorites_type => 'audio',
-            play => 'ardaudiothek://episode/' . $episode->{id},
+            play => 'ardaudiothek://' . $episode->{id},
             on_select => 'play',
             image => Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl}),
             description => $episode->{description},

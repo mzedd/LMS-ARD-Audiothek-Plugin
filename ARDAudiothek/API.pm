@@ -285,7 +285,7 @@ sub _categoryFromJson {
     my $category = {
         imageUrl => $jsonCategory->{image}->{url},
         title => $jsonCategory->{title},
-        id => $jsonCategory->{id}
+        id => $jsonCategory->{coreId}
     };
 
     return $category;
@@ -344,7 +344,7 @@ sub _playlistMetaFromJson {
     my $playlist = {
         imageUrl => $jsonPlaylist->{image}->{url1X1},
         title => $jsonPlaylist->{title},
-        id => $jsonPlaylist->{id}
+        id => $jsonPlaylist->{coreId}
     };
 
     return $playlist;
@@ -366,7 +366,7 @@ sub _episodeFromJson {
         url => $jsonEpisode->{audios}[0]->{url},
         imageUrl => $jsonEpisode->{image}->{url1X1},
         duration => $jsonEpisode->{duration},
-        id => $jsonEpisode->{id},
+        id => $jsonEpisode->{assetId},
         description => $jsonEpisode->{summary},
         title => $jsonEpisode->{title},
         show => $jsonEpisode->{programSet}->{title}

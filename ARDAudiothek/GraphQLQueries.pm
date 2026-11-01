@@ -21,7 +21,7 @@ use strict;
 use constant {
     FRAGMENT_ITEM =>
     'fragment item on Item {
-      id
+      assetId
       title
       summary
       duration
@@ -38,7 +38,7 @@ use constant {
 
     FRAGMENT_PROGRAMSETMETA =>
     'fragment programSetMeta on ProgramSet {
-      id
+      coreId
       title
       image {
         url1X1
@@ -48,7 +48,7 @@ use constant {
 
     FRAGMENT_EVENTLIVESTREAM =>
     'fragment eventLivestream on EventLivestream {
-      id
+      coreId
       title
       summary
       duration
@@ -76,13 +76,13 @@ use constant {
 
     FRAGMENT_EDITORIALCATEGORYMETA =>
     'fragment editorialCategoryMeta on EditorialCategory {
-      id
+      coreId
       title
     }',
 
     FRAGMENT_EDITORIALCOLLECTIONMETA =>
     'fragment editorialCollectionMeta on EditorialCollection {
-      id
+      coreId
       title
       image {
         url
@@ -190,7 +190,7 @@ use constant {
 
     EDITORIAL_CATEGORY_PLAYLISTS =>
     '{
-      editorialCategory(id: $id) {
+      editorialCategory(id: "$id") {
         sections {
           title
           type
@@ -210,8 +210,8 @@ use constant {
 
     PROGRAM_SET => 
     '{
-      programSet(id: $id) {
-        id
+      programSet(id: "$id") {
+        coreId
         title
         numberOfElements
         items(offset: $offset, first: $limit, filter: {isPublished: {equalTo: true}}, orderBy: PUBLISH_DATE_DESC) {
@@ -225,8 +225,8 @@ use constant {
 
     EDITORIAL_COLLECTION => 
     '{
-      editorialCollection(id: $id) {
-        id
+      editorialCollection(id: "$id") {
+        coreId
         title
         numberOfElements
         items(limit: $limit, offset: $offset) {
@@ -241,7 +241,7 @@ use constant {
 
     EPISODE =>
     '{
-      item(id: $id) {
+      item(id: "$id") {
         ...item
       }
     }'

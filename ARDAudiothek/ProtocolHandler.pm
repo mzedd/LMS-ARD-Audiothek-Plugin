@@ -45,7 +45,7 @@ sub scanUrl {
 
             $client->playingSong->pluginData(wmaMeta => {
                 icon   => $image,
-                cover  => $image,
+                cover  => Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl}, 1024),
                 artist => $episode->{show},
                 title  => $episode->{title}
             });
@@ -122,11 +122,11 @@ sub getMetadataFor {
     my $image = Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl});
 
     return {
-        icon => $image,
-        cover => $image,
-        title => $episode->{title},
-        artist => $episode->{show},
-        duration => $episode->{duration},
+        icon        => $image,
+        cover       => Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl}, 1024),
+        title       => $episode->{title},
+        artist      => $episode->{show},
+        duration    => $episode->{duration},
         description => $episode->{description}
     };
 }

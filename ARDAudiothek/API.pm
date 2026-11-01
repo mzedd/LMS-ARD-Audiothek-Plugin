@@ -23,7 +23,6 @@ use Digest::MD5 qw(md5_hex);
 
 use Slim::Utils::Log;
 use Slim::Utils::Cache;
-use Slim::Utils::Prefs;
 
 use Plugins::ARDAudiothek::GraphQLQueries;
 
@@ -34,7 +33,6 @@ use constant CACHE_TTL_IN_S => 1 * 3600; # cache one hour
 
 my $log = logger('plugin.ardaudiothek');
 my $cache = Slim::Utils::Cache->new();
-my $serverPrefs = preferences('server');
 
 sub search {
     my ($class, $callback, $args) = @_;
@@ -377,12 +375,12 @@ sub _episodeFromJson {
 }
 
 sub selectImageFormat {
-    my $imageUrl = shift;
-    my $thumbnailSize = 10.0 * $serverPrefs->{prefs}->{thumbSize};
+    my ($imageUrl, $imageSize) = @_;
+    $imageSize ||= 300;
 
     $imageUrl =~ s/{ratio}/1x1/i; # for compability
     $imageUrl =~ s/16x9/1x1/i;
-    $imageUrl =~ s/{width}/$thumbnailSize/i;
+    $imageUrl =~ s/{width}/$imageSize/i; # fallback for requests without an image size
 
     return $imageUrl;
 }

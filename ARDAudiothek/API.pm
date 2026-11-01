@@ -403,7 +403,7 @@ sub _call {
     my $cacheKey = md5_hex($url);
 
     if($cacheKey && (my $cached = $cache->get($cacheKey))) {
-        $log->info("Using cached data for url: $url");
+        $log->debug("Using cached data for url: $url");
         $callback->($cached);
         return $cached;
     }

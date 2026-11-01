@@ -94,7 +94,7 @@ sub getMetadataFor {
 
     # skip everthing what does not the custom uri
     if($uri !~ m/ardaudiothek:\/\/episode\/[0-9]+/) {
-        return undef;
+        return {};
     }
 
     my $episode;
@@ -116,7 +116,8 @@ sub getMetadataFor {
     $waitingForResponse = 0;
 
     if(not defined $episode) {
-        return undef;
+        # LMS clones the metadata even while the API response is pending.
+        return {};
     }
 
     my $image = Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl});

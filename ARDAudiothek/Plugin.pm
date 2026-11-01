@@ -2,17 +2,17 @@ package Plugins::ARDAudiothek::Plugin;
 
 # ARD Audiothek Plugin for the Logitech Media Server (LMS)
 # Copyright (C) 2021  Max Zimmermann  software@maxzimmermann.xyz
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -23,16 +23,17 @@ use Encode qw(encode);
 
 use Slim::Utils::Log;
 use Slim::Utils::Strings qw(string cstring);
+use Slim::Web::ImageProxy;
 
 use Plugins::ARDAudiothek::API;
 
 use constant MAX_ITEMS => 1000;
 
 my $log = Slim::Utils::Log->addLogCategory( {
-	category     => 'plugin.ardaudiothek',
-	defaultLevel => 'WARN',
-	description  => 'PLUGIN_ARDAUDIOTHEK_NAME',
-	logGroups    => 'SCANNER',
+    category     => 'plugin.ardaudiothek',
+    defaultLevel => 'WARN',
+    description  => 'PLUGIN_ARDAUDIOTHEK_NAME',
+    logGroups    => 'SCANNER',
 } );
 
 sub getDisplayName {
@@ -51,6 +52,26 @@ sub initPlugin {
     );
 
     Slim::Player::ProtocolHandlers->registerHandler('ardaudiothek', 'Plugins::ARDAudiothek::ProtocolHandler');
+
+    # Select the ARD source size for each client's image request.
+    Slim::Web::ImageProxy->registerHandler(
+        match => qr{^https?://api\.ardmediathek\.de/image-service/images/}i,
+        func  => sub {
+            my ($url, $spec) = @_;
+            my ($width, $height) = Slim::Web::Graphics->parseSpec($spec || '');
+            my $size = 0;
+
+            for my $dimension ($width, $height) {
+                $size = $dimension
+                    if defined $dimension
+                    && $dimension =~ /^\d+$/
+                    && $dimension > $size;
+            }
+
+            $url =~ s/([?&]w=)\d+(?=&|#|$)/$1$size/i if $size;
+            return $url;
+        },
+    );
 }
 
 sub shutdownPlugin {
@@ -84,7 +105,7 @@ sub homescreen {
         type => 'link',
         url => \&organizations
     };
-    
+
     push @items, {
         name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_PODCASTS'),
         type => 'link',
@@ -107,7 +128,7 @@ sub search {
         sub {
             my $searchResults = shift;
             my @items;
- 
+
             push @items, {
                 name  => cstring($client, 'PLUGIN_ARDAUDIOTHEK_PODCASTS'),
                 type  => 'link',
@@ -197,7 +218,7 @@ sub organizations {
             my $organizationlist = shift;
             my @items;
 
-            for my $organization (@{$organizationlist}) { 
+            for my $organization (@{$organizationlist}) {
                 push @items, {
                     name => $organization->{name},
                     type => 'link',
@@ -331,7 +352,7 @@ sub programSetsToOPML {
             url => \&programSetEpisodes,
             favorites_url => 'ardaudiothek://programset/' . $programSet->{id},
             passthrough => [{id => $programSet->{id}}]
-       };
+        };
     }
 
     return \@items;
@@ -344,7 +365,7 @@ sub programSetEpisodes {
         sub {
             my $programSet = shift;
 
-            my $items = episodesToOPML($programSet->{episodes}); 
+            my $items = episodesToOPML($programSet->{episodes});
             my $numberOfElements = $programSet->{numberOfElements};
 
             $callback->({items => $items});
@@ -383,7 +404,7 @@ sub collectionEpisodes {
     Plugins::ARDAudiothek::API->getEditorialCollection(
         sub {
             my $collection = shift;
-            
+
             my $items = episodesToOPML($collection->{episodes});
             my $numberOfElements = $collection->{numberOfElements};
 

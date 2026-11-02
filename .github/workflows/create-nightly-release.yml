@@ -5,49 +5,59 @@ on:
     branches:
       - develop
 
+concurrency:
+  group: nightly-release
+  cancel-in-progress: false
+
 jobs:
   create-nightly:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: bash
     steps:
-      - name: Delete nightly release
-        uses: dev-drprasad/delete-tag-and-release@v1.1
-        with:
-          delete_release: true
-          tag_name: nightly
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: nightly
-          release_name: Nightly build
-          draft: false
-          prerelease: true
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
-      - run: zip -r ARDAudiothek.zip ARDAudiothek
-      - name: Upload ZIP file
-        id: upload-zip-file
-        uses: actions/upload-release-asset@v1
+        uses: actions/checkout@v7
+
+      - name: Build release assets
+        run: |
+          mkdir -p dist
+          zip -qr dist/ARDAudiothek.zip ARDAudiothek
+          python3 - <<'PY'
+          import hashlib
+          import os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          repo = ET.parse("repo.xml")
+          plugin = repo.find("./plugins/plugin[@name='ARDAudiothek']")
+          plugin.find("sha").text = hashlib.sha1(Path("dist/ARDAudiothek.zip").read_bytes()).hexdigest()
+          plugin.find("url").text = (
+              f"https://github.com/{os.environ['GITHUB_REPOSITORY']}"
+              "/releases/download/nightly/ARDAudiothek.zip"
+          )
+          repo.write("dist/repo.xml", encoding="utf-8")
+          PY
+
+      - name: Publish nightly release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./ARDAudiothek.zip
-          asset_name: ARDAudiothek.zip
-          asset_content_type: application/zip
-      - name: Generate checksum
-        run: sed -i "/checksum/{s/checksum/$(sha1sum ARDAudiothek.zip | awk '{print $1}')/}" repo.xml
-      - name: Upload repo file
-        id: upload-repo-file
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./repo.xml
-          asset_name: repo.xml
-          asset_content_type: repofile/xml
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          release_id="$(gh api --paginate "repos/${GH_REPO}/releases" \
+            --jq '.[] | select(.tag_name == "nightly") | .id')"
+          if [[ -n "$release_id" ]]; then
+            gh release delete nightly --yes
+          fi
+
+          git tag --force nightly "$GITHUB_SHA"
+          git push --force origin refs/tags/nightly
+          gh release create nightly dist/ARDAudiothek.zip dist/repo.xml \
+            --verify-tag \
+            --title "Nightly build" \
+            --notes "Automated build from develop at commit ${GITHUB_SHA}." \
+            --prerelease \
+            --latest=false

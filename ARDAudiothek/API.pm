@@ -20,6 +20,7 @@ use strict;
 
 use JSON::XS;
 use Digest::MD5 qw(md5_hex);
+use URI::Escape qw(uri_escape_utf8);
 
 use Slim::Utils::Log;
 use Slim::Utils::Cache;
@@ -28,6 +29,7 @@ use Slim::Utils::Prefs;
 use Plugins::ARDAudiothek::GraphQLQueries;
 
 use constant GRAPHQL_API_URL => 'https://api.ardaudiothek.de/graphql?query=';
+use constant PLAYOUT_API_URL => 'https://api.ard.de/playout-api/v1/pages';
 use constant TIMEOUT_IN_S => 20;
 use constant CACHE_TTL_IN_S => 1 * 3600; # cache one hour
 
@@ -84,37 +86,39 @@ sub search {
 sub getDiscover {
     my ($class, $callback, $args) = @_;
 
-    my $url = GRAPHQL_API_URL . Plugins::ARDAudiothek::GraphQLQueries::DISCOVER;
-
-    my $adapter = sub {
-        my $content = shift;
-        my $items = _sectionsToLists($content->{data}->{homescreen});
-        $callback->($items);
-    };
-
-    _call($url, $adapter);
+    _call(_playoutPageUrl('/'), sub {
+        $callback->(_playoutSectionsToLists(shift));
+    });
 }
 
 sub getEditorialCategories {
     my ($class, $callback, $args) = @_;
-    my $url = GRAPHQL_API_URL . Plugins::ARDAudiothek::GraphQLQueries::EDITORIAL_CATEGORIES;
 
-    my $adapter = sub {
-        my $content = shift;
+    # The GraphQL editorialCategories connection is empty since the move to
+    # ARD Sounds. Read the same rubric navigation as the current website.
+    _call(_playoutPageUrl('/podcasts/'), sub {
+        my $sections = _playoutSectionsToLists(shift);
+        my @categories;
 
-        my $categorylist = _itemlistFromJson(
-            $content->{data}->{editorialCategories}->{nodes},
-            \&_categoryFromJson
-        );
+        for my $section (@{$sections}) {
+            push @categories, @{$section->{items}}
+                if $section->{type} eq 'editorialCategories';
+        }
 
-        $callback->($categorylist);
-    };
-
-    _call($url, $adapter);
+        $callback->(\@categories);
+    });
 }
 
 sub getEditorialCategoryPlaylists {
     my ($class, $callback, $args) = @_;
+
+    if($args->{id} =~ m{^/}) {
+        _call(_playoutPageUrl($args->{id}), sub {
+            $callback->(_playoutSectionsToLists(shift));
+        });
+        return;
+    }
+
     my $url = GRAPHQL_API_URL .
         replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::EDITORIAL_CATEGORY_PLAYLISTS, $args->{id});
 
@@ -129,28 +133,32 @@ sub getEditorialCategoryPlaylists {
 
 sub getOrganizations {
     my ($class, $callback, $args) = @_;
-    my $url = GRAPHQL_API_URL . Plugins::ARDAudiothek::GraphQLQueries::ORGANIZATIONS;
 
-    my $adapter = sub {
-        my $content = shift;
-
-        # remove the last 7 elements, because they contain no content
-        splice(@{$content->{data}->{organizations}->{nodes}}, 14);
-
-        my $organizationlist = _itemlistFromJson(
-            $content->{data}->{organizations}->{nodes},
-            \&_organizationFromJson
-        );
-
-        $callback->($organizationlist);
-    };
-
-    _call($url, $adapter);
+    _call(_playoutPageUrl('/radio/sender/'), sub {
+        my $sections = _playoutSectionsToLists(shift);
+        my @organizations;
+        for my $section (@{$sections}) {
+            next unless $section->{type} eq 'publicationServices';
+            push @organizations, {
+                name => $section->{title},
+                publicationServices => [map {
+                    {id => $_->{id}, name => $_->{title}, imageUrl => $_->{imageUrl}}
+                } @{$section->{items}}]
+            };
+        }
+        $callback->(\@organizations);
+    });
 }
 
 sub getPublicationService {
     my ($class, $callback, $args) = @_;
 
+    if($args->{id} =~ m{^/radio/}) {
+        _call(_playoutPageUrl($args->{id}), sub {
+            $callback->({sections => _playoutSectionsToLists(shift)});
+        });
+        return;
+    }
     my $url = GRAPHQL_API_URL . replaceIdInQuery(
         Plugins::ARDAudiothek::GraphQLQueries::PUBLICATION_SERVICE, $args->{id}
     );
@@ -222,6 +230,76 @@ sub getEpisode {
 
 sub clearCache {
     $cache->cleanup();
+}
+
+sub _playoutPageUrl {
+    my $path = shift;
+    return PLAYOUT_API_URL . '?canonicalWebURL=' . uri_escape_utf8($path) . '&embedded=all';
+}
+
+sub _playoutSectionsToLists {
+    my $content = shift;
+    my @sections;
+
+    for my $widget (@{$content->{widgets} || []}) {
+        my @items;
+        my $sectionType;
+
+        for my $teaser (@{$widget->{teasers} || []}) {
+            my $target = $teaser->{target} || {};
+            my $id = $teaser->{assetId} || $target->{assetId} || $target->{pageId} || '';
+            my $path = $target->{url} || '';
+            my ($type, $item);
+            my $image = $teaser->{squareImage} || $teaser->{image} || {};
+            my $meta = {
+                id => $id,
+                title => $teaser->{title},
+                imageUrl => $image->{templateURL} || $teaser->{publisher}->{logo1x1Colored}
+            };
+
+            if($id =~ /^urn:ard:show:/) {
+                $type = 'programSets';
+                $item = $meta;
+            }
+            elsif($id =~ /^urn:ard:episode:/) {
+                $type = 'episodes';
+                $item = {
+                    %{$meta},
+                    duration => $teaser->{duration},
+                    description => $teaser->{description},
+                    show => $teaser->{showTitle},
+                    url => $teaser->{assetDownloadURL}
+                };
+            }
+            elsif($id =~ /^urn:ard:(?:permanent|event)-livestream:/) {
+                $type = 'livestreams';
+                $item = $meta;
+            }
+            elsif($path =~ m{^/radio/}) {
+                $type = 'publicationServices';
+                $item = { %{$meta}, id => $path };
+            }
+            elsif($path =~ m{^/(?:rubrik|sammlung)/}) {
+                $type = 'editorialCategories';
+                $item = { %{$meta}, id => $path };
+            }
+            else {
+                next;
+            }
+
+            $sectionType = defined $sectionType && $sectionType ne $type ? 'mixed' : $type;
+            push @items, {type => $type, item => $item};
+        }
+
+        next unless @items;
+        push @sections, {
+            title => $widget->{title} || $widget->{seo}->{title} || 'Podcasts',
+            type => $sectionType,
+            items => $sectionType eq 'mixed' ? \@items : [map {$_->{item}} @items]
+        };
+    }
+
+    return \@sections;
 }
 
 sub _sectionsToLists {

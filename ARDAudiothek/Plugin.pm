@@ -234,6 +234,10 @@ sub publicationService {
 
     Plugins::ARDAudiothek::API->getPublicationService(sub {
         my $service = shift;
+        if(exists $service->{sections}) {
+            $callback->({items => sectionsToOPML($service->{sections})});
+            return;
+        }
         my $items = programSetsToOPML($service->{programSets});
 
         if(defined $service->{permanentLivestreams}) {
@@ -271,45 +275,42 @@ sub permanentLivestreamsToOPML {
 
 sub sectionsToOPML {
     my $sections = shift;
-    my @items;
+    my @groups;
+    my %converters = (
+        episodes => \&episodesToOPML,
+        livestreams => \&episodesToOPML,
+        programSets => \&programSetsToOPML,
+        editorialCategories => \&editorialCategoriesToOPML,
+        editorialCollections => \&editorialCollectionsToOPML,
+        publicationServices => \&publicationServices
+    );
 
     for my $section (@{$sections}) {
-        if($section->{type} eq "episodes") {
-            push @items, {
-                name  => $section->{title},
-                type  => 'link',
-                items => episodesToOPML($section->{items})
-            };
-            next;
+        my $children;
+        if($section->{type} eq 'mixed') {
+            my @children;
+            for my $entry (@{$section->{items}}) {
+                my $converter = $converters{$entry->{type}} or next;
+                push @children, @{$converter->([$entry->{item}])};
+            }
+            $children = \@children;
+        }
+        else {
+            my $converter = $converters{$section->{type}} or next;
+            $children = $converter->($section->{items});
         }
 
-        if($section->{type} eq "programSets") {
-            push @items, {
-                name  => $section->{title},
-                type  => 'link',
-                items => programSetsToOPML($section->{items})
-            };
-            next;
-        }
-
-        if($section->{type} eq "editorialCategories") {
-            push @items, {
-                name  => $section->{title},
-                type  => 'link',
-                items => editorialCategoriesToOPML($section->{items})
-            };
-            next;
-        }
-
-        if($section->{type} eq "editorialCollections") {
-            push @items, {
-                name  => $section->{title},
-                type  => 'link',
-                items => editorialCollectionsToOPML($section->{items})
-            };
-            next;
-        }
+        next unless @{$children};
+        push @groups, {
+            name => $section->{title},
+            type => $section->{type},
+            items => $children
+        };
     }
+
+    my @items = map {
+        {name => $_->{name}, type => 'link', items => $_->{items}}
+    } @groups;
 
     return \@items;
 }

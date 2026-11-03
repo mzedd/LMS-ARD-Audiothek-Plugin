@@ -36,6 +36,11 @@ sub scanUrl {
     Plugins::ARDAudiothek::API->getEpisode(
         sub {
             my $episode = shift;
+            unless($episode && $episode->{url}) {
+                $args->{cb}->(undef, 'SCANNER_REMOTE_NO_URL_PROVIDED', @{$args->{pt} || []})
+                    if $args->{cb};
+                return;
+            }
             my $url = $episode->{url};
 
             Slim::Utils::Scanner::Remote->scanURL($url, $args);
@@ -106,7 +111,7 @@ sub getMetadataFor {
 
             # A cache miss is resolved asynchronously. Ask LMS to fetch the
             # metadata again once the episode data has arrived.
-            if(!$waitingForResponse && defined $client) {
+            if(!$waitingForResponse && defined $client && defined $episode) {
                 Slim::Control::Request::notifyFromArray($client, ['newmetadata']);
             }
         },

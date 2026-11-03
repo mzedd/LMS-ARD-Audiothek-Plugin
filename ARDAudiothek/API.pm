@@ -34,6 +34,7 @@ use constant CACHE_TTL_IN_S => 1 * 3600; # cache one hour
 my $log = logger('plugin.ardaudiothek');
 my $cache = Slim::Utils::Cache->new();
 my $serverPrefs = preferences('server');
+my %pendingRequests;
 
 sub search {
     my ($class, $callback, $args) = @_;
@@ -410,6 +411,12 @@ sub _call {
         return $cached;
     }
 
+    if(exists $pendingRequests{$cacheKey}) {
+        push @{$pendingRequests{$cacheKey}}, $callback;
+        return undef;
+    }
+    $pendingRequests{$cacheKey} = [$callback];
+
     Slim::Networking::SimpleAsyncHTTP->new(
         sub {
             my $response = shift;
@@ -417,7 +424,7 @@ sub _call {
             my $content = eval { decode_json($response->content) };
             if($@ || ref $content ne 'HASH') {
                 $log->error("Invalid JSON response calling $url.");
-                $callback->(undef);
+                _finishCall($cacheKey, undef);
                 return;
             }
 
@@ -426,7 +433,7 @@ sub _call {
                 my $errors = join('; ', map { $_->{message} || 'Unknown GraphQL error' } @{$content->{errors}});
                 $log->error("GraphQL error calling $url: $errors");
                 unless(ref $content->{data} eq 'HASH' && grep { defined $_ } values %{$content->{data}}) {
-                    $callback->(undef);
+                    _finishCall($cacheKey, undef);
                     return;
                 }
             }
@@ -435,16 +442,26 @@ sub _call {
             # Deliver that data, but allow the next call to retry missing parts.
             $cache->set($cacheKey, $content, CACHE_TTL_IN_S) unless $hasErrors;
 
-            $callback->($content);
+            _finishCall($cacheKey, $content);
         },
         sub {
             $log->error("An error occured calling $url.");
-            $callback->(undef);
+            _finishCall($cacheKey, undef);
         },
         { timeout => TIMEOUT_IN_S }
     )->get($url);
 
     return undef;
+}
+
+sub _finishCall {
+    my ($cacheKey, $content) = @_;
+    my $callbacks = delete $pendingRequests{$cacheKey} || [];
+
+    for my $callback (@{$callbacks}) {
+        eval { $callback->($content) };
+        $log->error("API callback failed: $@") if $@;
+    }
 }
 
 1;

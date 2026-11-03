@@ -235,17 +235,13 @@ sub publicationService {
     Plugins::ARDAudiothek::API->getPublicationService(sub {
         my $service = shift;
         if(exists $service->{sections}) {
-            $callback->({items => sectionsToOPML($service->{sections})});
+            $callback->({items => sectionsToOPML($service->{sections}, {directLivestreams => 1})});
             return;
         }
         my $items = programSetsToOPML($service->{programSets});
 
         if(defined $service->{permanentLivestreams}) {
-            unshift @{$items}, {
-                title => 'Livestreams',
-                image => Plugins::ARDAudiothek::API::selectImageFormat($service->{imageUrl}),
-                items => permanentLivestreamsToOPML($service->{permanentLivestreams})
-            };
+            unshift @{$items}, @{permanentLivestreamsToOPML($service->{permanentLivestreams})};
         }
 
         $callback->({items => $items});
@@ -274,7 +270,8 @@ sub permanentLivestreamsToOPML {
 }
 
 sub sectionsToOPML {
-    my $sections = shift;
+    my ($sections, $options) = @_;
+    $options ||= {};
     my @groups;
     my %converters = (
         episodes => \&episodesToOPML,
@@ -314,7 +311,7 @@ sub sectionsToOPML {
 
     my @items;
     for my $group (@groups) {
-        if(@{$group->{items}} == 1) {
+        if(@{$group->{items}} == 1 || ($options->{directLivestreams} && $group->{type} eq 'livestreams')) {
             push @items, @{$group->{items}};
         }
         else {

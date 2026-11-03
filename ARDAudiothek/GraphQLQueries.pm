@@ -150,27 +150,36 @@ use constant {
       organizations {
         nodes {
           title
-          image {
-            url
-          }
           publicationServicesByOrganizationName (filter: { numberOfElements: { greaterThan: 0 } } ) {
             nodes {
+              coreId
               title
               image {
                 url1X1
               }
-              permanentLivestreams {
-                totalCount
-                nodes {
-                  ...permanentLivestreams
-                }
-              }
-              programSets (filter: {numberOfElements: {greaterThan: 0 } } ) {
-                nodes {
-                  ...programSetMeta
-                }
-              }
             }
+          }
+        }
+      }
+    }',
+
+    PUBLICATION_SERVICE =>
+    '{
+      publicationService(id: "$id") {
+        coreId
+        title
+        image {
+          url1X1
+        }
+        permanentLivestreams {
+          totalCount
+          nodes {
+            ...permanentLivestreams
+          }
+        }
+        programSets (filter: {numberOfElements: {greaterThan: 0 } } ) {
+          nodes {
+            ...programSetMeta
           }
         }
       }

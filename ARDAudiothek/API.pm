@@ -148,6 +148,19 @@ sub getOrganizations {
     _call($url, $adapter);
 }
 
+sub getPublicationService {
+    my ($class, $callback, $args) = @_;
+
+    my $url = GRAPHQL_API_URL . replaceIdInQuery(
+        Plugins::ARDAudiothek::GraphQLQueries::PUBLICATION_SERVICE, $args->{id}
+    );
+
+    _call($url, sub {
+        my $content = shift;
+        $callback->(_publicationServiceFromJson($content->{data}->{publicationService}));
+    });
+}
+
 sub getProgramSet {
     my ($class, $callback, $args) = @_;
 
@@ -304,17 +317,27 @@ sub _organizationFromJson {
         name => $jsonOrganization->{title},
         publicationServices => _itemlistFromJson(
             $jsonOrganization->{publicationServicesByOrganizationName}->{nodes},
-            \&_publicationServiceFromJson
+            \&_publicationServiceMetaFromJson
         )
     };
 
     return $organization;
 }
 
+sub _publicationServiceMetaFromJson {
+    my $service = shift;
+    return {
+        id => $service->{coreId},
+        name => $service->{title},
+        imageUrl => $service->{image}->{url1X1}
+    };
+}
+
 sub _publicationServiceFromJson {
     my $jsonPublicationService = shift;
 
     my $publicationService = {
+        id => $jsonPublicationService->{coreId},
         name => $jsonPublicationService->{title},
         imageUrl => $jsonPublicationService->{image}->{url1X1},
         programSets => _itemlistFromJson(

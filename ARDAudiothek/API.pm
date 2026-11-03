@@ -201,7 +201,13 @@ sub getEpisode {
         return;
     }
 
-    my $url = GRAPHQL_API_URL . replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::EPISODE, $args->{id});
+    my $query = Plugins::ARDAudiothek::GraphQLQueries::EPISODE;
+    if($args->{id} =~ /^urn:ard:(permanent|event)-livestream:/) {
+        my $streamType = $1 eq 'permanent' ? 'permanentLivestream' : 'eventLivestream';
+        $query = Plugins::ARDAudiothek::GraphQLQueries::LIVESTREAM;
+        $query =~ s/\$streamType/$streamType/;
+    }
+    my $url = GRAPHQL_API_URL . replaceIdInQuery($query, $args->{id});
 
     my $adapter = sub {
         my $jsonEpisode = shift;
@@ -390,13 +396,13 @@ sub _playlistFromJson {
 
 sub _episodeFromJson {
     my $jsonEpisode = shift;
-    return undef unless ref $jsonEpisode eq 'HASH' && $jsonEpisode->{assetId};
+    return undef unless ref $jsonEpisode eq 'HASH' && ($jsonEpisode->{assetId} || $jsonEpisode->{coreId});
 
     my $episode = {
         url => $jsonEpisode->{audios}[0]->{url},
         imageUrl => $jsonEpisode->{image}->{url1X1},
         duration => $jsonEpisode->{duration},
-        id => $jsonEpisode->{assetId},
+        id => $jsonEpisode->{assetId} || $jsonEpisode->{coreId},
         description => $jsonEpisode->{summary},
         title => $jsonEpisode->{title},
         show => $jsonEpisode->{programSet}->{title}

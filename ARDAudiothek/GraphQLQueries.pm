@@ -248,6 +248,9 @@ use constant {
     .FRAGMENT_ITEM,
 
 
+    LIVESTREAM =>
+    '{item:$streamType(id:"$id"){coreId title image{url1X1} audios{url}}}',
+
     EPISODE =>
     '{
       item(id: "$id") {

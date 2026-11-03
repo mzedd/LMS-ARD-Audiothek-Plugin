@@ -80,7 +80,7 @@ sub explodePlaylist {
         limit => PLAYLIST_EPISODE_LIMIT
     };
 
-    if($uri =~ /ardaudiothek:\/\/urn:ard:episode:[a-z0-9]+/) {
+    if($uri =~ /ardaudiothek:\/\/urn:ard:(?:episode|(?:permanent|event)-livestream):[a-z0-9]+/) {
         $callback->([$uri]);
     }
     elsif($uri =~ /ardaudiothek:\/\/urn:ard:show:[a-z0-9]+/) {
@@ -97,8 +97,8 @@ sub explodePlaylist {
 sub getMetadataFor {
     my ($class, $client, $uri) = @_;
 
-    # skip everthing what does not match the uri format
-    if($uri !~ m/ardaudiothek:\/\/urn:ard:(episode|show|collection):[a-z0-9]+/) {
+    # Skip URIs that do not match the current ARD format.
+    if($uri !~ m/ardaudiothek:\/\/urn:ard:(episode|show|collection|(?:permanent|event)-livestream):[a-z0-9]+/) {
         return;
     }
 

@@ -183,6 +183,11 @@ sub getEditorialCollection {
 sub getEpisode {
     my ($class, $callback, $args) = @_;
 
+    if(my $episode = $cache->get('ardaudiothek:episode:' . $args->{id})) {
+        $callback->($episode);
+        return;
+    }
+
     my $url = GRAPHQL_API_URL . replaceIdInQuery(Plugins::ARDAudiothek::GraphQLQueries::EPISODE, $args->{id});
 
     my $adapter = sub {
@@ -373,6 +378,14 @@ sub _episodeFromJson {
         title => $jsonEpisode->{title},
         show => $jsonEpisode->{programSet}->{title}
     };
+
+    # List responses already contain the fields needed for playback and metadata.
+    # Share them with getEpisode instead of fetching every item again.
+    if($episode->{url}) {
+        my $cacheKey = 'ardaudiothek:episode:' . $episode->{id};
+        $cache->set($cacheKey, $episode, CACHE_TTL_IN_S)
+            unless $cache->get($cacheKey);
+    }
 
     return $episode;
 }

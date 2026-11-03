@@ -75,13 +75,13 @@ sub explodePlaylist {
         limit => PLAYLIST_EPISODE_LIMIT
     };
 
-    if($uri =~ /ardaudiothek:\/\/episode\/[0-9]+/) {
+    if($uri =~ /ardaudiothek:\/\/urn:ard:episode:[a-z0-9]+/) {
         $callback->([$uri]);
     }
-    elsif($uri =~ /ardaudiothek:\/\/programset\/[0-9]+/) {
+    elsif($uri =~ /ardaudiothek:\/\/urn:ard:show:[a-z0-9]+/) {
         Plugins::ARDAudiothek::API->getProgramSet($adapter, $variables);
     }
-    elsif($uri =~ /ardaudiothek:\/\/collection\/[0-9]+/) {
+    elsif($uri =~ /ardaudiothek:\/\/urn:ard:collection:[a-z0-9]+/) {
         Plugins::ARDAudiothek::API->getEditorialCollection($adapter, $variables);
     }
     else {
@@ -92,8 +92,8 @@ sub explodePlaylist {
 sub getMetadataFor {
     my ($class, $client, $uri) = @_;
 
-    # skip everthing what does not the custom uri
-    if($uri !~ m/ardaudiothek:\/\/episode\/[0-9]+/) {
+    # Skip URIs that do not match the current ARD format.
+    if($uri !~ m/ardaudiothek:\/\/urn:ard:(episode|show|collection):[a-z0-9]+/) {
         return {};
     }
 
@@ -136,7 +136,7 @@ sub _itemIdFromUri {
     my $uri = shift;
 
     my $id = $uri;
-    $id =~ s/\D//g;
+    $id =~ s/ardaudiothek:\/\///g;
 
     return $id;
 }

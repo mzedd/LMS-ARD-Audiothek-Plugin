@@ -308,9 +308,19 @@ sub sectionsToOPML {
         };
     }
 
-    my @items = map {
-        {name => $_->{name}, type => 'link', items => $_->{items}}
-    } @groups;
+    # A page containing a single list already has a navigation title. Show its
+    # contents directly instead of making the user open the same list again.
+    return $groups[0]->{items} if @groups == 1;
+
+    my @items;
+    for my $group (@groups) {
+        if(@{$group->{items}} == 1) {
+            push @items, @{$group->{items}};
+        }
+        else {
+            push @items, {name => $group->{name}, type => 'link', items => $group->{items}};
+        }
+    }
 
     return \@items;
 }

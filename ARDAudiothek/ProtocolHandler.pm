@@ -45,7 +45,7 @@ sub scanUrl {
 
             $client->playingSong->pluginData(wmaMeta => {
                 icon   => $image,
-                cover  => $image,
+                cover  => Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl}, 1024),
                 artist => $episode->{show},
                 title  => $episode->{title}
             });
@@ -92,9 +92,9 @@ sub explodePlaylist {
 sub getMetadataFor {
     my ($class, $client, $uri) = @_;
 
-    # skip everthing what does not match the uri format
+    # Skip URIs that do not match the current ARD format.
     if($uri !~ m/ardaudiothek:\/\/urn:ard:(episode|show|collection):[a-z0-9]+/) {
-        return;
+        return {};
     }
 
     my $episode;
@@ -116,17 +116,18 @@ sub getMetadataFor {
     $waitingForResponse = 0;
 
     if(not defined $episode) {
-        return {}; # return empty anonymous hash since the meta data has not arrived yet
+        # LMS clones the metadata even while the API response is pending.
+        return {};
     }
 
     my $image = Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl});
 
     return {
-        icon => $image,
-        cover => $image,
-        title => $episode->{title},
-        artist => $episode->{show},
-        duration => $episode->{duration},
+        icon        => $image,
+        cover       => Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl}, 1024),
+        title       => $episode->{title},
+        artist      => $episode->{show},
+        duration    => $episode->{duration},
         description => $episode->{description}
     };
 }

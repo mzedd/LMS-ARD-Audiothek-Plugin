@@ -105,32 +105,23 @@ sub search {
 
     Plugins::ARDAudiothek::API->search(
         sub {
-            my $searchResults = shift;
+            my $searchResults = shift || {};
             my @items;
- 
-            push @items, {
-                name  => cstring($client, 'PLUGIN_ARDAUDIOTHEK_PODCASTS'),
-                type  => 'link',
-                items => programSetsToOPML($searchResults->{programSets})
-            };
 
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES'),
-                type => 'link',
-                items => editorialCategoriesToOPML($searchResults->{editorialCategories})
-            };
+            for my $group (
+                ['programSets', 'PLUGIN_ARDAUDIOTHEK_PODCASTS', \&programSetsToOPML],
+                ['episodes', 'PLUGIN_ARDAUDIOTHEK_ITEMS', \&episodesToOPML],
+            ) {
+                my ($key, $label, $converter) = @{$group};
+                my $children = $converter->($searchResults->{$key} || []);
+                next unless @{$children};
 
-            push @items, {
-                name  => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCOLLECTIONS'),
-                type  => 'link',
-                items => editorialCollectionsToOPML($searchResults->{editorialCollections})
-            };
-
-            push @items, {
-                name  => cstring($client, 'PLUGIN_ARDAUDIOTHEK_ITEMS'),
-                type  => 'link',
-                items => episodesToOPML($searchResults->{episodes})
-            };
+                push @items, {
+                    name => cstring($client, $label),
+                    type => 'link',
+                    items => $children
+                };
+            }
 
             $callback->({items => \@items});
         },{

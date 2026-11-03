@@ -100,16 +100,6 @@ use constant {
             ...programSetMeta
           }
         }
-        editorialCategories {
-          nodes {
-            ...editorialCategoryMeta
-          }
-        }
-        editorialCollections {
-          nodes {
-            ...editorialCollectionMeta
-          }
-        }
         items {
           nodes {
             ...item
@@ -118,8 +108,6 @@ use constant {
       }
     }'
     .FRAGMENT_PROGRAMSETMETA
-    .FRAGMENT_EDITORIALCATEGORYMETA
-    .FRAGMENT_EDITORIALCOLLECTIONMETA
     .FRAGMENT_ITEM,
 
     DISCOVER =>

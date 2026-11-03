@@ -55,16 +55,6 @@ sub search {
             \&_playlistMetaFromJson
         );
 
-        my $editorialCategories = _itemlistFromJson(
-            $content->{editorialCategories}->{nodes},
-            \&_categoryFromJson
-        );
-
-        my $editorialCollections = _itemlistFromJson(
-            $content->{editorialCollections}->{nodes},
-            \&_playlistMetaFromJson
-        );
-
         my $episodes = _itemlistFromJson(
             $content->{items}->{nodes},
             \&_episodeFromJson
@@ -72,8 +62,6 @@ sub search {
 
         my $searchResults = {
             programSets => $programSets,
-            editorialCategories => $editorialCategories,
-            editorialCollections => $editorialCollections,
             episodes => $episodes
         };
 

@@ -293,13 +293,38 @@ sub _playoutSectionsToLists {
 
         next unless @items;
         push @sections, {
-            title => $widget->{title} || $widget->{seo}->{title} || 'Podcasts',
+            title => _playoutWidgetTitle($widget, $sectionType),
             type => $sectionType,
             items => $sectionType eq 'mixed' ? \@items : [map {$_->{item}} @items]
         };
     }
 
     return \@sections;
+}
+
+sub _playoutWidgetTitle {
+    my ($widget, $type) = @_;
+    my $placeholder = qr/^\s*default(?:[\s_-]+widget)?[\s_-]+seo[\s_-]+tit(?:le|el)\s*$/i;
+
+    for my $title ($widget->{title}, $widget->{seo}->{title}) {
+        next unless defined $title && !ref $title && $title =~ /\S/;
+        next if $title =~ $placeholder || $title =~ /^\s*(?:stage|rubrikenband)\s*$/i;
+        return $title;
+    }
+
+    return 'Entdecken' if ($widget->{widgetType} || '') eq 'stageTeaserWidget';
+    return 'Rubriken' if $type eq 'editorialCategories';
+
+    my $teasers = $widget->{teasers} || [];
+    if(@{$teasers} == 1) {
+        my $title = $teasers->[0]->{title};
+        return $title if defined $title && !ref $title && $title =~ /\S/ && $title !~ $placeholder;
+    }
+
+    return 'Livestreams' if $type eq 'livestreams';
+    return 'Radio' if $type eq 'publicationServices';
+    return 'Episoden' if $type eq 'episodes';
+    return 'Podcasts';
 }
 
 sub _sectionsToLists {

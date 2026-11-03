@@ -361,6 +361,7 @@ sub _playlistFromJson {
 
 sub _episodeFromJson {
     my $jsonEpisode = shift;
+    return undef unless ref $jsonEpisode eq 'HASH' && $jsonEpisode->{assetId};
 
     my $episode = {
         url => $jsonEpisode->{audios}[0]->{url},
@@ -414,12 +415,31 @@ sub _call {
             my $response = shift;
 
             my $content = eval { decode_json($response->content) };
-            $cache->set($cacheKey, $content, CACHE_TTL_IN_S);
+            if($@ || ref $content ne 'HASH') {
+                $log->error("Invalid JSON response calling $url.");
+                $callback->(undef);
+                return;
+            }
+
+            my $hasErrors = $content->{errors} && @{$content->{errors}};
+            if($hasErrors) {
+                my $errors = join('; ', map { $_->{message} || 'Unknown GraphQL error' } @{$content->{errors}});
+                $log->error("GraphQL error calling $url: $errors");
+                unless(ref $content->{data} eq 'HASH' && grep { defined $_ } values %{$content->{data}}) {
+                    $callback->(undef);
+                    return;
+                }
+            }
+
+            # GraphQL can return useful data alongside a failed optional field.
+            # Deliver that data, but allow the next call to retry missing parts.
+            $cache->set($cacheKey, $content, CACHE_TTL_IN_S) unless $hasErrors;
 
             $callback->($content);
         },
         sub {
             $log->error("An error occured calling $url.");
+            $callback->(undef);
         },
         { timeout => TIMEOUT_IN_S }
     )->get($url);

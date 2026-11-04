@@ -43,7 +43,21 @@ sub scanUrl {
             }
             my $url = $episode->{url};
 
-            Slim::Utils::Scanner::Remote->scanURL($url, $args);
+            my $scanArgs = $args;
+            if(my $song = $args->{song}) {
+                $scanArgs = {%{$args}, cb => sub {
+                    my ($track, $error, @context) = @_;
+                    if($track && !Slim::Music::Info::isPlaylist($track, $track->content_type)) {
+                        # Keep the plugin URI as the playlist/source identity.
+                        # The resolved track supplies the audio and format data.
+                        $song->_currentTrack($track);
+                        $song->streamUrl($track->url);
+                        $track = $song->track;
+                    }
+                    $args->{cb}->($track, $error, @context) if $args->{cb};
+                }};
+            }
+            Slim::Utils::Scanner::Remote->scanURL($url, $scanArgs);
 
             my $client = $args->{client}->master;
             my $image = Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl});
@@ -121,12 +135,14 @@ sub getMetadataFor {
     $waitingForResponse = 0;
 
     if(not defined $episode) {
-        return {}; # return empty anonymous hash since the meta data has not arrived yet
+        return {u => $uri}; # identify the source while metadata loads
     }
 
     my $image = Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl});
 
     return {
+        # LMS status uses this URL to identify the plugin in Material Skin.
+        u => $uri,
         icon => $image,
         cover => $image,
         title => $episode->{title},

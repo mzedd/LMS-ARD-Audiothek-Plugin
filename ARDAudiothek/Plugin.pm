@@ -136,11 +136,12 @@ sub search {
 
 sub discover {
     my ($client, $callback) = @_;
+    my $textMenus = _usePlayerTextMenus($client);
 
     Plugins::ARDAudiothek::API->getDiscover(
         sub {
             my $content = shift;
-            my $items = sectionsToOPML($content);
+            my $items = sectionsToOPML($content, {textMenus => $textMenus});
             $callback->({items => $items});
         }
     );
@@ -164,12 +165,13 @@ sub editorialCategories {
 
 sub editorialCategoryPlaylists {
     my ($client, $callback, $args, $params) = @_;
+    my $textMenus = _usePlayerTextMenus($client);
     my @items;
 
     Plugins::ARDAudiothek::API->getEditorialCategoryPlaylists(
         sub {
             my $content = shift;
-            my $items = sectionsToOPML($content);
+            my $items = sectionsToOPML($content, {textMenus => $textMenus});
             $callback->({items => $items});
         },
         {
@@ -222,11 +224,14 @@ sub publicationServices {
 
 sub publicationService {
     my ($client, $callback, $args, $params) = @_;
+    my $textMenus = _usePlayerTextMenus($client);
 
     Plugins::ARDAudiothek::API->getPublicationService(sub {
         my $service = shift;
         if(exists $service->{sections}) {
-            $callback->({items => sectionsToOPML($service->{sections}, {directLivestreams => 1})});
+            $callback->({items => sectionsToOPML($service->{sections}, {
+                directLivestreams => 1, textMenus => $textMenus
+            })});
             return;
         }
         my $items = programSetsToOPML($service->{programSets});
@@ -235,7 +240,7 @@ sub publicationService {
             unshift @{$items}, @{permanentLivestreamsToOPML($service->{permanentLivestreams})};
         }
 
-        $callback->({items => $items});
+        $callback->({items => _playerMenuItems($items, $textMenus)});
     }, {id => $params->{id}});
 
     return;
@@ -298,7 +303,7 @@ sub sectionsToOPML {
 
     # A page containing a single list already has a navigation title. Show its
     # contents directly instead of making the user open the same list again.
-    return $groups[0]->{items} if @groups == 1;
+    return _playerMenuItems($groups[0]->{items}, $options->{textMenus}) if @groups == 1;
 
     my @items;
     for my $group (@groups) {
@@ -310,7 +315,30 @@ sub sectionsToOPML {
         }
     }
 
-    return \@items;
+    return _playerMenuItems(\@items, $options->{textMenus});
+}
+
+sub _usePlayerTextMenus {
+    my $client = shift;
+    # Material may control the same player: identify the requesting frontend.
+    return $client && $client->can('controllerUA')
+        && ($client->controllerUA || '') =~ /squeezeplay|jivelite/i;
+}
+
+sub _playerMenuItems {
+    my ($items, $enabled) = @_;
+    return $items unless $enabled;
+
+    my $withImage = grep { $_->{image} || $_->{icon} || $_->{cover} } @{$items};
+    if($withImage && $withImage < @{$items}) {
+        for my $item (@{$items}) {
+            $item->{style} = 'text_list';
+            # Secondary lines force LMS back to icon_list, even without images.
+            delete @{$item}{qw(line2 name2 subtext)};
+        }
+    }
+    _playerMenuItems($_->{items}, 1) for grep { ref $_->{items} eq 'ARRAY' } @{$items};
+    return $items;
 }
 
 sub editorialCategoriesToOPML {

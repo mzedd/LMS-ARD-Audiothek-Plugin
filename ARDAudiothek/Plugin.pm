@@ -105,32 +105,23 @@ sub search {
 
     Plugins::ARDAudiothek::API->search(
         sub {
-            my $searchResults = shift;
+            my $searchResults = shift || {};
             my @items;
- 
-            push @items, {
-                name  => cstring($client, 'PLUGIN_ARDAUDIOTHEK_PODCASTS'),
-                type  => 'link',
-                items => programSetsToOPML($searchResults->{programSets})
-            };
 
-            push @items, {
-                name => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCATEGORIES'),
-                type => 'link',
-                items => editorialCategoriesToOPML($searchResults->{editorialCategories})
-            };
+            for my $group (
+                ['programSets', 'PLUGIN_ARDAUDIOTHEK_PODCASTS', \&programSetsToOPML],
+                ['episodes', 'PLUGIN_ARDAUDIOTHEK_ITEMS', \&episodesToOPML],
+            ) {
+                my ($key, $label, $converter) = @{$group};
+                my $children = $converter->($searchResults->{$key} || []);
+                next unless @{$children};
 
-            push @items, {
-                name  => cstring($client, 'PLUGIN_ARDAUDIOTHEK_EDITORIALCOLLECTIONS'),
-                type  => 'link',
-                items => editorialCollectionsToOPML($searchResults->{editorialCollections})
-            };
-
-            push @items, {
-                name  => cstring($client, 'PLUGIN_ARDAUDIOTHEK_ITEMS'),
-                type  => 'link',
-                items => episodesToOPML($searchResults->{episodes})
-            };
+                push @items, {
+                    name => cstring($client, $label),
+                    type => 'link',
+                    items => $children
+                };
+            }
 
             $callback->({items => \@items});
         },{
@@ -145,11 +136,12 @@ sub search {
 
 sub discover {
     my ($client, $callback) = @_;
+    my $textMenus = _usePlayerTextMenus($client);
 
     Plugins::ARDAudiothek::API->getDiscover(
         sub {
             my $content = shift;
-            my $items = sectionsToOPML($content);
+            my $items = sectionsToOPML($content, {textMenus => $textMenus});
             $callback->({items => $items});
         }
     );
@@ -173,12 +165,13 @@ sub editorialCategories {
 
 sub editorialCategoryPlaylists {
     my ($client, $callback, $args, $params) = @_;
+    my $textMenus = _usePlayerTextMenus($client);
     my @items;
 
     Plugins::ARDAudiothek::API->getEditorialCategoryPlaylists(
         sub {
             my $content = shift;
-            my $items = sectionsToOPML($content);
+            my $items = sectionsToOPML($content, {textMenus => $textMenus});
             $callback->({items => $items});
         },
         {
@@ -217,26 +210,40 @@ sub publicationServices {
     my @items;
 
     for my $publicationService (@{$publicationServices}) {
-        my $publicationServiceItems = programSetsToOPML($publicationService->{programSets});
-
-        # add radio station if there is one
-        if(defined $publicationService->{permanentLivestreams}) {
-            unshift @{$publicationServiceItems}, {
-                title => 'Livestreams',
-                image => Plugins::ARDAudiothek::API::selectImageFormat($publicationService->{imageUrl}),
-                items => permanentLivestreamsToOPML($publicationService->{permanentLivestreams})
-            };
-        }
-
         push @items, {
-            name => $publicationService->{name},
+            name => $publicationService->{name} || $publicationService->{title},
             type => 'link',
             image => Plugins::ARDAudiothek::API::selectImageFormat($publicationService->{imageUrl}),
-            items => $publicationServiceItems
+            url => \&publicationService,
+            passthrough => [{id => $publicationService->{id}}]
         };
     }
 
     return \@items;
+}
+
+sub publicationService {
+    my ($client, $callback, $args, $params) = @_;
+    my $textMenus = _usePlayerTextMenus($client);
+
+    Plugins::ARDAudiothek::API->getPublicationService(sub {
+        my $service = shift;
+        if(exists $service->{sections}) {
+            $callback->({items => sectionsToOPML($service->{sections}, {
+                directLivestreams => 1, textMenus => $textMenus
+            })});
+            return;
+        }
+        my $items = programSetsToOPML($service->{programSets});
+
+        if(defined $service->{permanentLivestreams}) {
+            unshift @{$items}, @{permanentLivestreamsToOPML($service->{permanentLivestreams})};
+        }
+
+        $callback->({items => _playerMenuItems($items, $textMenus)});
+    }, {id => $params->{id}});
+
+    return;
 }
 
 sub permanentLivestreamsToOPML {
@@ -259,48 +266,79 @@ sub permanentLivestreamsToOPML {
 }
 
 sub sectionsToOPML {
-    my $sections = shift;
-    my @items;
+    my ($sections, $options) = @_;
+    $options ||= {};
+    my @groups;
+    my %converters = (
+        episodes => \&episodesToOPML,
+        livestreams => \&episodesToOPML,
+        programSets => \&programSetsToOPML,
+        editorialCategories => \&editorialCategoriesToOPML,
+        editorialCollections => \&editorialCollectionsToOPML,
+        publicationServices => \&publicationServices
+    );
 
     for my $section (@{$sections}) {
-        if($section->{type} eq "episodes") {
-            push @items, {
-                name  => $section->{title},
-                type  => 'link',
-                items => episodesToOPML($section->{items})
-            };
-            next;
+        my $children;
+        if($section->{type} eq 'mixed') {
+            my @children;
+            for my $entry (@{$section->{items}}) {
+                my $converter = $converters{$entry->{type}} or next;
+                push @children, @{$converter->([$entry->{item}])};
+            }
+            $children = \@children;
+        }
+        else {
+            my $converter = $converters{$section->{type}} or next;
+            $children = $converter->($section->{items});
         }
 
-        if($section->{type} eq "programSets") {
-            push @items, {
-                name  => $section->{title},
-                type  => 'link',
-                items => programSetsToOPML($section->{items})
-            };
-            next;
-        }
+        next unless @{$children};
+        push @groups, {
+            name => $section->{title},
+            type => $section->{type},
+            items => $children
+        };
+    }
 
-        if($section->{type} eq "editorialCategories") {
-            push @items, {
-                name  => $section->{title},
-                type  => 'link',
-                items => editorialCategoriesToOPML($section->{items})
-            };
-            next;
-        }
+    # A page containing a single list already has a navigation title. Show its
+    # contents directly instead of making the user open the same list again.
+    return _playerMenuItems($groups[0]->{items}, $options->{textMenus}) if @groups == 1;
 
-        if($section->{type} eq "editorialCollections") {
-            push @items, {
-                name  => $section->{title},
-                type  => 'link',
-                items => editorialCollectionsToOPML($section->{items})
-            };
-            next;
+    my @items;
+    for my $group (@groups) {
+        if(@{$group->{items}} == 1 || ($options->{directLivestreams} && $group->{type} eq 'livestreams')) {
+            push @items, @{$group->{items}};
+        }
+        else {
+            push @items, {name => $group->{name}, type => 'link', items => $group->{items}};
         }
     }
 
-    return \@items;
+    return _playerMenuItems(\@items, $options->{textMenus});
+}
+
+sub _usePlayerTextMenus {
+    my $client = shift;
+    # Material may control the same player: identify the requesting frontend.
+    return $client && $client->can('controllerUA')
+        && ($client->controllerUA || '') =~ /squeezeplay|jivelite/i;
+}
+
+sub _playerMenuItems {
+    my ($items, $enabled) = @_;
+    return $items unless $enabled;
+
+    my $withImage = grep { $_->{image} || $_->{icon} || $_->{cover} } @{$items};
+    if($withImage && $withImage < @{$items}) {
+        for my $item (@{$items}) {
+            $item->{style} = 'text_list';
+            # Secondary lines force LMS back to icon_list, even without images.
+            delete @{$item}{qw(line2 name2 subtext)};
+        }
+    }
+    _playerMenuItems($_->{items}, 1) for grep { ref $_->{items} eq 'ARRAY' } @{$items};
+    return $items;
 }
 
 sub editorialCategoriesToOPML {

@@ -42,6 +42,14 @@ sub scanUrl {
                 return;
             }
             my $url = $episode->{url};
+            my $isLivestream = $id =~ /^urn:ard:(?:permanent|event)-livestream:/;
+
+            if($isLivestream && (my $song = $args->{song})) {
+                # Keep station fallback separate from LMS's changing stream data.
+                $song->pluginData(ardaudiothekLivestream => {
+                    uri => $uri, url => $url, episode => $episode
+                });
+            }
 
             my $scanArgs = $args;
             if(my $song = $args->{song}) {
@@ -58,6 +66,7 @@ sub scanUrl {
                 }};
             }
             Slim::Utils::Scanner::Remote->scanURL($url, $scanArgs);
+            return if $isLivestream;
 
             my $client = $args->{client}->master;
             my $image = Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl});
@@ -111,6 +120,21 @@ sub explodePlaylist {
 sub getMetadataFor {
     my ($class, $client, $uri) = @_;
 
+    if($client && $client->can('playingSong') && (my $song = $client->playingSong())) {
+        if(my $stream = $song->pluginData('ardaudiothekLivestream')) {
+            my $track = $song->track;
+            my $currentTrack = $song->currentTrack || $track;
+            my $trackUrl = $track ? $track->url : '';
+            my $currentUrl = $currentTrack ? $currentTrack->url : '';
+            if($uri eq $stream->{uri} || $uri eq $stream->{url}
+                || $uri eq $trackUrl || $uri eq $currentUrl) {
+                # LMS stores ICY titles and covers under the playlist URL,
+                # which remains the plugin URI after resolving the audio.
+                return $class->_livestreamMetadata($client, $trackUrl || $currentUrl, $stream);
+            }
+        }
+    }
+
     # Skip URIs that do not match the current ARD format.
     if($uri !~ m/ardaudiothek:\/\/urn:ard:(episode|show|collection|(?:permanent|event)-livestream):[a-z0-9]+/) {
         return;
@@ -150,6 +174,36 @@ sub getMetadataFor {
         duration => $episode->{duration},
         description => $episode->{description}
     };
+}
+
+sub _livestreamMetadata {
+    my ($class, $client, $url, $stream) = @_;
+    my $episode = $stream->{episode};
+    my $image = Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl});
+    my $metadata = {
+        u => $stream->{uri},
+        title => $episode->{title}, artist => $episode->{show},
+        album => $episode->{title},
+        icon => $image, cover => $image, description => $episode->{description}
+    };
+    return $metadata unless defined $url && length $url;
+
+    # Preserve the plugin invocant for HTTP's handler recursion guard.
+    # LMS already handles stream updates, notifications and buffering delay.
+    my $live = $class->SUPER::getMetadataFor($client, $url) || {};
+    for my $field (qw(artist title album cover)) {
+        next unless defined $live->{$field} && length $live->{$field};
+        next if $field eq 'title' && $live->{$field} eq $url;
+        next if $field eq 'cover' && $live->{$field} =~ m{^/?html/images/radio\.png$};
+        $metadata->{$field} = $live->{$field};
+    }
+    # Keep the station name only once when it also occupies the artist field.
+    if($metadata->{album} && lc($metadata->{album}) eq lc($episode->{title} || '')
+        && lc($metadata->{artist} || '') eq lc($metadata->{album})) {
+        $metadata->{artist} = '';
+    }
+    $metadata->{icon} = $metadata->{cover};
+    return $metadata;
 }
 
 sub _itemIdFromUri {

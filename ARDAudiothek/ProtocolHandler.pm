@@ -73,7 +73,7 @@ sub scanUrl {
 
             $client->playingSong->pluginData(wmaMeta => {
                 icon   => $image,
-                cover  => $image,
+                cover  => Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl}, 1024),
                 artist => $episode->{show},
                 title  => $episode->{title}
             });
@@ -137,7 +137,7 @@ sub getMetadataFor {
 
     # Skip URIs that do not match the current ARD format.
     if($uri !~ m/ardaudiothek:\/\/urn:ard:(episode|show|collection|(?:permanent|event)-livestream):[a-z0-9]+/) {
-        return;
+        return {};
     }
 
     my $episode;
@@ -168,7 +168,7 @@ sub getMetadataFor {
         # LMS status uses this URL to identify the plugin in Material Skin.
         u => $uri,
         icon => $image,
-        cover => $image,
+        cover => Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl}, 1024),
         title => $episode->{title},
         artist => $episode->{show},
         duration => $episode->{duration},
@@ -184,7 +184,7 @@ sub _livestreamMetadata {
         u => $stream->{uri},
         title => $episode->{title}, artist => $episode->{show},
         album => $episode->{title},
-        icon => $image, cover => $image, description => $episode->{description}
+        icon => $image, cover => Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl}, 1024), description => $episode->{description}
     };
     return $metadata unless defined $url && length $url;
 

@@ -52,7 +52,7 @@ sub scanUrl {
             }
 
             my $scanArgs = $args;
-            if(my $song = $args->{song}) {
+            if($isLivestream && (my $song = $args->{song})) {
                 $scanArgs = {%{$args}, cb => sub {
                     my ($track, $error, @context) = @_;
                     if($track && !Slim::Music::Info::isPlaylist($track, $track->content_type)) {
@@ -186,11 +186,10 @@ sub _livestreamMetadata {
         album => $episode->{title},
         icon => $image, cover => Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl}, 1024), description => $episode->{description}
     };
-    return $metadata unless defined $url && length $url;
-
     # Preserve the plugin invocant for HTTP's handler recursion guard.
     # LMS already handles stream updates, notifications and buffering delay.
-    my $live = $class->SUPER::getMetadataFor($client, $url) || {};
+    my $live = defined $url && length $url
+        ? ($class->SUPER::getMetadataFor($client, $url) || {}) : {};
     for my $field (qw(artist title album cover)) {
         next unless defined $live->{$field} && length $live->{$field};
         next if $field eq 'title' && $live->{$field} eq $url;
@@ -201,6 +200,12 @@ sub _livestreamMetadata {
     if($metadata->{album} && lc($metadata->{album}) eq lc($episode->{title} || '')
         && lc($metadata->{artist} || '') eq lc($metadata->{album})) {
         $metadata->{artist} = '';
+    }
+    # The synthetic station album is useful only beside a different live title.
+    # Keep real native albums, even when they happen to match the title.
+    if(!(defined $live->{album} && length $live->{album})
+        && lc($metadata->{title} || '') eq lc($episode->{title} || '')) {
+        $metadata->{album} = '';
     }
     $metadata->{icon} = $metadata->{cover};
     return $metadata;

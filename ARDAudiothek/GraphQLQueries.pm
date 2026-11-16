@@ -48,6 +48,7 @@ use constant {
 
     FRAGMENT_EVENTLIVESTREAM =>
     'fragment eventLivestream on EventLivestream {
+      assetId
       coreId
       title
       summary
@@ -103,12 +104,14 @@ use constant {
         items {
           nodes {
             ...item
+            ...eventLivestream
           }
         }
       }
     }'
     .FRAGMENT_PROGRAMSETMETA
-    .FRAGMENT_ITEM,
+    .FRAGMENT_ITEM
+    .FRAGMENT_EVENTLIVESTREAM,
 
     DISCOVER =>
     '{

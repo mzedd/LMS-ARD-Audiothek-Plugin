@@ -49,6 +49,11 @@ sub scanUrl {
                 $song->pluginData(ardaudiothekLivestream => {
                     uri => $uri, url => $url, episode => $episode
                 });
+                if($id =~ /^urn:ard:event-livestream:/ && (my $track = $song->track)) {
+                    # LMS exposes the source track title as remote_title. Use
+                    # the event title so an older menu label adds no third line.
+                    $track->title($episode->{title});
+                }
             }
 
             my $scanArgs = $args;
@@ -186,6 +191,12 @@ sub _livestreamMetadata {
         album => $episode->{title},
         icon => $image, cover => Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl}, 1024), description => $episode->{description}
     };
+    # Event audio can reuse an ordinary station stream (e.g. BR24). Its ICY
+    # metadata describes that station, not the selected sports/event programme.
+    if($stream->{uri} =~ m{^ardaudiothek://urn:ard:event-livestream:}) {
+        $metadata->{album} = '';
+        return $metadata;
+    }
     # Preserve the plugin invocant for HTTP's handler recursion guard.
     # LMS already handles stream updates, notifications and buffering delay.
     my $live = defined $url && length $url

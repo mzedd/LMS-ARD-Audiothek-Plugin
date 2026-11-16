@@ -198,15 +198,29 @@ sub getEpisode {
     my $query = Plugins::ARDAudiothek::GraphQLQueries::EPISODE;
     if($args->{id} =~ /^urn:ard:(permanent|event)-livestream:/) {
         my $streamType = $1 eq 'permanent' ? 'permanentLivestream' : 'eventLivestream';
-        $query = Plugins::ARDAudiothek::GraphQLQueries::LIVESTREAM;
-        $query =~ s/\$streamType/$streamType/;
+        if($streamType eq 'eventLivestream') {
+            # Include the event's programme/provider, not the carrier station.
+            $query = '{item:eventLivestream(id:"$id"){
+                coreId title image{url1X1} audios{url} programSet{title}
+            }}';
+        }
+        else {
+            $query = Plugins::ARDAudiothek::GraphQLQueries::LIVESTREAM;
+            $query =~ s/\$streamType/$streamType/;
+        }
     }
     my $url = GRAPHQL_API_URL . replaceIdInQuery($query, $args->{id});
 
     my $adapter = sub {
         my $jsonEpisode = shift;
 
-        $callback->(_episodeFromJson($jsonEpisode->{data}->{item}));
+        my $item = $jsonEpisode->{data}->{item};
+        if(ref $item eq 'HASH' && $args->{id} =~ /^urn:ard:event-livestream:/) {
+            # The event endpoint can return a publication core ID. Retain the
+            # requested playable event URN without changing the cached response.
+            $item = {%{$item}, assetId => $args->{id}};
+        }
+        $callback->(_episodeFromJson($item));
     };
 
     _call($url, $adapter);

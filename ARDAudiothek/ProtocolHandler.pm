@@ -51,6 +51,14 @@ sub scanUrl {
                 });
             }
 
+            if($id =~ /^urn:ard:(?:episode|event-livestream):/ && (my $song = $args->{song})) {
+                if(my $track = $song->track) {
+                    # Keep plugin source identity without an extra remote_title
+                    # line from a differing cached menu/file title.
+                    $track->title($episode->{title});
+                }
+            }
+
             my $scanArgs = $args;
             if(my $song = $args->{song}) {
                 $scanArgs = {%{$args}, cb => sub {
@@ -71,7 +79,8 @@ sub scanUrl {
             my $client = $args->{client}->master;
             my $image = Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl});
 
-            $client->playingSong->pluginData(wmaMeta => {
+            my $song = $args->{song} || $client->playingSong;
+            $song->pluginData(wmaMeta => {
                 icon   => $image,
                 cover  => Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl}, 1024),
                 artist => $episode->{show},
@@ -171,6 +180,8 @@ sub getMetadataFor {
         cover => Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl}, 1024),
         title => $episode->{title},
         artist => $episode->{show},
+        # Suppress embedded audio album tags beneath ARD episode metadata.
+        album => '',
         duration => $episode->{duration},
         description => $episode->{description}
     };
@@ -186,11 +197,16 @@ sub _livestreamMetadata {
         album => $episode->{title},
         icon => $image, cover => Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl}, 1024), description => $episode->{description}
     };
-    return $metadata unless defined $url && length $url;
-
+    # Event audio can reuse an ordinary station stream (e.g. BR24). Its ICY
+    # metadata describes that station, not the selected sports/event programme.
+    if($stream->{uri} =~ m{^ardaudiothek://urn:ard:event-livestream:}) {
+        $metadata->{album} = '';
+        return $metadata;
+    }
     # Preserve the plugin invocant for HTTP's handler recursion guard.
     # LMS already handles stream updates, notifications and buffering delay.
-    my $live = $class->SUPER::getMetadataFor($client, $url) || {};
+    my $live = defined $url && length $url
+        ? ($class->SUPER::getMetadataFor($client, $url) || {}) : {};
     for my $field (qw(artist title album cover)) {
         next unless defined $live->{$field} && length $live->{$field};
         next if $field eq 'title' && $live->{$field} eq $url;
@@ -201,6 +217,12 @@ sub _livestreamMetadata {
     if($metadata->{album} && lc($metadata->{album}) eq lc($episode->{title} || '')
         && lc($metadata->{artist} || '') eq lc($metadata->{album})) {
         $metadata->{artist} = '';
+    }
+    # The synthetic station album is useful only beside a different live title.
+    # Keep real native albums, even when they happen to match the title.
+    if(!(defined $live->{album} && length $live->{album})
+        && lc($metadata->{title} || '') eq lc($episode->{title} || '')) {
+        $metadata->{album} = '';
     }
     $metadata->{icon} = $metadata->{cover};
     return $metadata;

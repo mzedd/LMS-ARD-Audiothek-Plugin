@@ -49,15 +49,18 @@ sub scanUrl {
                 $song->pluginData(ardaudiothekLivestream => {
                     uri => $uri, url => $url, episode => $episode
                 });
-                if($id =~ /^urn:ard:event-livestream:/ && (my $track = $song->track)) {
-                    # LMS exposes the source track title as remote_title. Use
-                    # the event title so an older menu label adds no third line.
+            }
+
+            if($id =~ /^urn:ard:(?:episode|event-livestream):/ && (my $song = $args->{song})) {
+                if(my $track = $song->track) {
+                    # Keep plugin source identity without an extra remote_title
+                    # line from a differing cached menu/file title.
                     $track->title($episode->{title});
                 }
             }
 
             my $scanArgs = $args;
-            if($isLivestream && (my $song = $args->{song})) {
+            if(my $song = $args->{song}) {
                 $scanArgs = {%{$args}, cb => sub {
                     my ($track, $error, @context) = @_;
                     if($track && !Slim::Music::Info::isPlaylist($track, $track->content_type)) {
@@ -76,7 +79,8 @@ sub scanUrl {
             my $client = $args->{client}->master;
             my $image = Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl});
 
-            $client->playingSong->pluginData(wmaMeta => {
+            my $song = $args->{song} || $client->playingSong;
+            $song->pluginData(wmaMeta => {
                 icon   => $image,
                 cover  => Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl}, 1024),
                 artist => $episode->{show},
@@ -176,6 +180,8 @@ sub getMetadataFor {
         cover => Plugins::ARDAudiothek::API::selectImageFormat($episode->{imageUrl}, 1024),
         title => $episode->{title},
         artist => $episode->{show},
+        # Suppress embedded audio album tags beneath ARD episode metadata.
+        album => '',
         duration => $episode->{duration},
         description => $episode->{description}
     };

@@ -58,9 +58,21 @@ sub search {
             \&_episodeFromJson
         );
 
+        # Search items contain both episodes and event livestreams.
+        my (@onDemand, @livestreams);
+        for my $episode (@{$episodes}) {
+            if($episode->{id} =~ /^urn:ard:(?:permanent|event)-livestream:/) {
+                push @livestreams, $episode;
+            }
+            else {
+                push @onDemand, $episode;
+            }
+        }
+
         my $searchResults = {
             programSets => $programSets,
-            episodes => $episodes
+            episodes => \@onDemand,
+            livestreams => \@livestreams
         };
 
         $callback->($searchResults);

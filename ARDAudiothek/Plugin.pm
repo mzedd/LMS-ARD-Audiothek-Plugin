@@ -132,6 +132,7 @@ sub search {
             for my $group (
                 ['programSets', 'PLUGIN_ARDAUDIOTHEK_PODCASTS', \&programSetsToOPML],
                 ['episodes', 'PLUGIN_ARDAUDIOTHEK_ITEMS', \&episodesToOPML],
+                ['livestreams', 'PLUGIN_ARDAUDIOTHEK_LIVESTREAMS', \&episodesToOPML],
             ) {
                 my ($key, $label, $converter) = @{$group};
                 my $children = $converter->($searchResults->{$key} || []);
